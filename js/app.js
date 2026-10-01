@@ -1,7 +1,10 @@
 import { api, startLiveUpdates } from './api.js';
 import * as U from './util.js';
+import * as ART from './art.js';
 
 const { esc } = U;
+const BRAND = window.BRAND || {};
+const B = (k, d) => (BRAND[k] == null || BRAND[k] === '' ? d : BRAND[k]);
 
 // ---------------------------------------------------------------- state
 let S = null;                 // server state (read model)
@@ -32,11 +35,28 @@ const nowServer = () => Date.now() + serverOffset;
 const preEvent = () => S.standings.every((x) => x.total === 0) && !S.blackjack.finalized && !S.golf.scores.length && !S.picks.length;
 const standingsMeta = () => (final() ? 'Final' : preEvent() ? 'Competition has not started' : 'Live');
 
+function applyBrand(st) {
+  const bt = BRAND.teams || {};
+  for (const t of st.teams) {
+    const o = bt[t.id] || {};
+    if (o.primary) t.color = o.primary;
+    if (o.logo) t.logo_url = o.logo;
+    t.color2 = o.secondary || null;
+  }
+}
 function teamMark(t, size = '') {
   if (!t) return '';
   return `<span class="team-mark ${size}" style="--tc:${esc(t.color)}">${t.logo_url ? `<img src="${esc(t.logo_url)}" alt="">` : esc(t.short_name)}</span>`;
 }
-// Tight spots (switchers, owned-side tags) fall back to the short name when the full name is long.
+// Event identity block: typographic until BRAND.eventLogo is supplied.
+function eventId(extra = '') {
+  const logo = B('eventLogo', null);
+  return `<div class="event-id ${extra}">${logo ? `<img class="eid-logo" src="${esc(logo)}" alt="${esc(B('eventName', "QUYLE'S"))} ${esc(B('eventTagline', 'BACHELOR PARTY'))}">` :
+    `<div class="eid-name">${esc(B('eventName', "QUYLE'S"))}</div><div class="eid-tag">${esc(B('eventTagline', 'BACHELOR PARTY'))}</div>`}
+    <div class="eid-rule"></div><div class="eid-loc">${esc(titleCase(B('location', 'ASHEVILLE, NORTH CAROLINA')))}</div><div class="eid-date">${esc(B('dates', 'OCTOBER 9–12, 2026'))}</div></div>`;
+}
+const titleCase = (s) => s.toLowerCase().replace(/\b([a-z])/g, (m) => m.toUpperCase());
+
 const tlabel = (t, max = 14) => esc(t ? (t.name.length > max ? t.short_name : t.name) : '');
 const tstyle = (t) => (t ? `style="--tc:${esc(t.color)}"` : '');
 const tname = (id) => esc(U.team(S, id)?.name || `Team ${id}`);
@@ -65,9 +85,9 @@ async function run(fn, args, okMsg) {
   } finally { ui.busy = false; }
 }
 
-function confirmThen({ title, body, ok = 'Confirm', danger = false, big = '' }, fn) {
+function confirmThen({ title, body, ok = 'Confirm', danger = false, big = '', kicker = '', meta = '' }, fn) {
   pendingConfirm = fn;
-  ui.modal = { type: 'confirm', title, body, ok, danger, big };
+  ui.modal = { type: 'confirm', title, body, ok, danger, big, kicker, meta };
   render();
 }
 
@@ -86,11 +106,16 @@ async function refresh(force = false) {
     const next = await api.getState();
     serverOffset = Date.parse(next.server_now) - Date.now();
     const changed = !S || force || next.version !== S.version;
+    applyBrand(next);
+    const prevPickIds = seenPickIds, wasFinal = S && S.competition.finalized_at;
     S = next;
     const ids = new Set(S.picks.map((p) => p.id));
     freshPickIds = new Set([...ids].filter((id) => seenPickIds.size && !seenPickIds.has(id)));
     seenPickIds = ids;
     if (changed) safeRender();
+    // broadcast moments: a new pick for everyone watching, and the championship reveal
+    if (prevPickIds.size && freshPickIds.size) announcePick([...freshPickIds].map((id) => S.picks.find((x) => x.id === id)).sort((a, b) => b.pick_no - a.pick_no)[0]);
+    maybeReveal(wasFinal);
   } catch (e) {
     if (e.code === 'NOT_SIGNED_IN') { signOut(true); return; }
     if (!S) renderFatal(e.message);
@@ -121,11 +146,9 @@ function renderLogin(msg = '') {
   pin = '';
   $app.innerHTML = `
   <div class="login">
-    <div class="login-mark">
-      <h1>QUINN &amp; KYLE</h1>
-      <p>ASHEVILLE • 2026</p>
-    </div>
-    <div class="rule"></div>
+    <div class="login-sky"><div class="topo-layer"></div></div>
+    ${ART.mountains('dusk')}<div class="login-fade"></div>
+    <div class="login-mark">${eventId()}</div>
     <div class="pin-label" id="pin-label">ENTER PIN</div>
     <div class="pin-boxes" id="pin-boxes" aria-live="polite" aria-labelledby="pin-label">${'<span></span>'.repeat(4)}</div>
     <div class="pad" role="group" aria-label="PIN keypad">
@@ -135,6 +158,7 @@ function renderLogin(msg = '') {
     <div class="login-msg" id="login-msg">${esc(msg)}</div>
   </div>`;
 }
+
 function paintPin(err = false) {
   const boxes = document.getElementById('pin-boxes');
   if (!boxes) return;
@@ -172,10 +196,15 @@ async function start() {
 }
 
 function skeleton() {
-  return `<header class="topbar"><div class="wordmark">QUINN &amp; KYLE<small>ASHEVILLE 2026</small></div></header>
+  return `<header class="topbar">${wordmark()}</header>
   <main><div class="section"><div class="panel">${'<div class="skel"></div>'.repeat(3)}</div></div>
   <div class="section"><div class="panel">${'<div class="skel"></div>'.repeat(4)}</div></div></main>`;
 }
+function wordmark() {
+  const logo = B('eventLogo', null);
+  return `<div class="wordmark">${logo ? `<img src="${esc(logo)}" alt="${esc(B('eventName', "QUYLE'S"))}">` : `<b>${esc(B('eventName', "QUYLE'S"))}</b><small>${esc(B('eventTagline', 'BACHELOR PARTY'))}</small>`}</div>`;
+}
+
 function renderFatal(msg) {
   $app.innerHTML = `<div class="login"><div class="login-mark"><h1>CAN'T CONNECT</h1></div><div class="rule"></div>
   <p class="muted" style="text-align:center;max-width:320px">${esc(msg)}</p>
@@ -198,24 +227,28 @@ function nav() {
 function topbar() {
   const t = U.team(S, me().team_id);
   return `<header class="topbar">
-    <div class="wordmark">QUINN &amp; KYLE<small>ASHEVILLE 2026</small></div>
+    ${wordmark()}
     <div class="me-chip">${testMode() ? '<span class="test-flag">TEST MODE</span>' : ''}
       <span class="sync-dot ${syncStatus === 'live' ? 'live' : ''}" title="${syncStatus === 'live' ? 'Live' : 'Refreshing every few seconds'}"></span>
-      <b>${esc(me().name)}</b>${teamMark(t, 'sm')}</div>
+      <span class="me-who"><b>${esc(me().name)}</b><span class="me-team">${esc(t?.name || '')}</span></span>${teamMark(t, 'sm')}</div>
   </header>`;
 }
+
+const TICK_TAG = { blackjack: 'CASINO', golf: 'GOLF', draft: 'DRAFT', result: 'RESULT', lead: 'STANDINGS', tiebreaker: 'SNF', champion: 'FINAL' };
 function ticker() {
   if (!S.ticker.length) return '';
-  const items = S.ticker.slice(0, 14).map((t) => `<span>${esc(U.tickerText(S, t.text))}</span>`).join('');
-  const dur = Math.max(30, S.ticker.slice(0, 14).reduce((a, t) => a + t.text.length, 0) * 0.28);
-  return `<div class="ticker" aria-label="Latest updates"><div class="ticker-tag">LATEST</div>
+  const list = S.ticker.slice(0, 14);
+  const items = list.map((t) => `<span><em>${TICK_TAG[t.kind] || 'UPDATE'}</em>${esc(U.tickerText(S, t.text))}</span>`).join('');
+  const dur = Math.max(30, list.reduce((a, t) => a + t.text.length + 8, 0) * 0.28);
+  const live = !final() && liveEvent();
+  return `<div class="ticker" aria-label="Latest updates"><div class="ticker-tag">${live ? '<i></i>LIVE' : final() ? 'FINAL' : 'LATEST'}</div>
     <div class="ticker-track" style="--dur:${dur}s">${items}${items}</div></div>`;
 }
 
 function render() {
   if (!S) return;
   const view = { home: viewHome, golf: viewGolf, football: viewFootball, standings: viewStandings, more: viewMore }[ui.tab]();
-  $app.innerHTML = `${topbar()}${ui.tab === 'home' ? ticker() : ''}<main>${view}</main>${nav()}${modal()}`;
+  $app.innerHTML = `${topbar()}<main>${view}</main>${nav()}${modal()}`;
   // restore in-progress form values
   document.querySelectorAll('[data-k]').forEach((el) => {
     const k = el.dataset.k;
@@ -225,83 +258,104 @@ function render() {
 }
 
 // ---------------------------------------------------------------- HOME
+const DAYS = [['FRIDAY', 'October 9'], ['SATURDAY', 'October 10'], ['SUNDAY', 'October 11']];
 function viewHome() {
-  return `${final() ? championCard() : ''}
+  const ev = homeEvents();
+  const live = liveEvent();
+  const today = live ? ev.find((e) => e.key === live)?.day : null;
+  return `<section class="hero home">${ART.mountains('dusk')}<div class="topo-layer"></div>
+    <div class="hero-in"><div class="home-id">${B('eventLogo', null) ? `<img src="${esc(B('eventLogo'))}" alt="">` : `<b>${esc(B('eventName', "QUYLE'S"))}</b><span>${esc(B('eventTagline', 'BACHELOR PARTY'))}</span>`}<small>${esc(titleCase(B('location', 'ASHEVILLE, NORTH CAROLINA')))}</small></div>
+    <div class="home-day">${final() ? `<em>${esc(B('year', '2026'))}</em>FINAL` : today != null ? `<em>DAY ${today + 1}</em>${DAYS[today][0]}` : `<em>OCT 9–12</em>${preEvent() ? 'UPCOMING' : 'IN PROGRESS'}`}</div></div></section>
+  ${ticker()}
+  ${final() ? championCard() : ''}
   <section class="section">
-    <div class="sec-head"><h2 class="sec-title">Weekend standings</h2><span class="sec-meta">${standingsMeta()}</span></div>
+    <div class="sec-head"><h2 class="sec-title">${final() ? 'Final standings' : 'Weekend standings'}</h2><span class="sec-meta">${preEvent() ? 'Oct 9–12' : standingsMeta()}</span></div>
     ${standingsList()}
   </section>
-  <section class="section">
-    <div class="sec-head"><h2 class="sec-title">What's live</h2></div>
-    <div class="panel">${events().map((e) => `<button class="row ev" data-act="goto" data-tab="${e.tab}" ${e.kind ? `data-kind="${e.kind}"` : ''}>
-      <span class="ev-name">${esc(e.name)}</span><span class="ev-sub">${e.sub}</span>${e.pill}</button>`).join('')}</div>
-  </section>
-  ${S.blackjack.finalized && S.blackjack.mug_member_id ? `
-  <section class="section">
-    <div class="sec-head"><h2 class="sec-title">The Mug</h2><span class="sec-meta">Blackjack individual award</span></div>
-    <div class="panel"><div class="row">${teamMark(U.team(S, U.member(S, S.blackjack.mug_member_id)?.team_id))}
-      <div><div class="team-name">${esc(U.member(S, S.blackjack.mug_member_id)?.name)}</div><div class="muted" style="font-size:13px">Mug winner • no championship points</div></div></div></div>
-  </section>` : ''}`;
+  ${!final() ? liveHero(ev, live) : ''}
+  ${DAYS.map(([d, date], i) => `<section class="day"><div class="day-head ${today === i ? 'now' : ''}"><b>${d}</b><span>${date}</span></div>
+    ${ev.filter((e) => e.day === i).map(eventCard).join('')}</section>`).join('')}
+  ${final() ? `<div class="section"><button class="btn block" data-act="more" data-v="archive">Open the weekend archive</button></div>` : ''}
+  <div class="rail-foot">${ART.beerCan()}<span>${esc(titleCase(B('location', 'ASHEVILLE, NORTH CAROLINA')))}</span></div>`;
 }
 
 function standingsList() {
-  return `<div class="panel">${S.standings.map((s) => {
+  const leader = !preEvent() && S.standings.filter((s) => s.rnk === 1).length === 1 ? S.standings[0].team_id : null;
+  return `<div class="panel board"><div class="board-head"><span>${preEvent() ? 'COMPETITION HAS NOT STARTED' : final() ? 'FINAL' : 'LIVE STANDINGS'}</span><b>MAX 17 PTS</b></div>${S.standings.map((s) => {
     const t = U.team(S, s.team_id); const open = !!ui.expanded[s.team_id];
     return `<div class="tbar" ${tstyle(t)}>
-      <button class="row stand-row" data-act="expand" data-id="${s.team_id}" aria-expanded="${open}">
-        <span class="rank">${preEvent() ? '-' : s.rnk}</span>${teamMark(t)}<span class="team-name">${esc(t.name)}</span>
+      <button class="row stand-row ${leader === s.team_id ? 'lead' : ''}" data-act="expand" data-id="${s.team_id}" aria-expanded="${open}">
+        <span class="rank">${final() && S.competition.champion_team_id === s.team_id ? `<span class="mini-trophy" title="Weekend champion">${ART.trophy()}</span>` : preEvent() ? '-' : s.rnk}</span>${teamMark(t)}<span class="team-name">${esc(t.name)}</span>
         <span class="pts">${s.total}<small>PTS</small></span>
         <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
       </button>
       ${open ? `<div class="breakdown">
-        <div><b>${s.blackjack}</b><span>Blackjack</span></div><div><b>${s.golf}</b><span>Golf</span></div>
+        <div><b>${s.blackjack}</b><span>Casino</span></div><div><b>${s.golf}</b><span>Golf</span></div>
         <div><b>${s.cfb}</b><span>CFB</span></div><div><b>${s.nfl}</b><span>NFL</span></div>
         <div class="tot"><b>${s.total}</b><span>Total</span></div></div>` : ''}
     </div>`;
   }).join('')}</div>`;
 }
 
-function events() {
-  const out = [];
-  const bj = S.blackjack;
-  out.push({ tab: 'more', kind: 'blackjack', name: 'Blackjack', sub: bj.finalized ? `${tname(bj.first_team)} wins` : 'Results pending', pill: bj.finalized ? '<span class="pill final">Final</span>' : '<span class="pill">Friday</span>' });
-
-  const g = S.golf; const started = g.summary.some((x) => x.thru > 0); const done = g.summary.every((x) => x.complete);
+// One status model for every event card and the live hero.
+function homeEvents() {
+  const bj = S.blackjack; const g = S.golf;
+  const started = g.summary.some((x) => x.thru > 0); const done = g.summary.every((x) => x.complete);
   const lead = g.summary.find((x) => x.pos === 1);
-  let gsub = 'Saturday • Reems Creek', gpill = '<span class="pill">Saturday</span>';
-  if (done) { gsub = g.placements ? `${tname(g.placements[0])} wins` : 'Tie, commissioner deciding'; gpill = '<span class="pill final">Final</span>'; }
-  else if (started) { gsub = `${lead.pos_label.startsWith('T') ? 'Tied lead' : tname(lead.team_id)} ${U.fmtPar(lead.to_par)} • ${g.summary.map((x) => `T${x.team_id} ${x.thru ? `thru ${x.thru}` : 'not started'}`).join(', ')}`; gpill = '<span class="pill live">Live</span>'; }
-  out.push({ tab: 'golf', name: 'Golf', sub: gsub, pill: gpill });
-
-  for (const kind of ['cfb', 'nfl']) {
-    const d = U.draft(S, kind); const ps = U.picksFor(S, kind); const label = kind.toUpperCase();
-    let name = `${label} draft`, sub = '', pill = '';
-    if (d.status === 'open') { const oc = U.onClock(S, kind); sub = `On the clock: ${tname(oc.team)} • round ${oc.round}`; pill = '<span class="pill live">Live</span>'; }
-    else if (d.status === 'paused') { sub = `Paused at pick ${d.pick_count + 1}`; pill = '<span class="pill gold">Paused</span>'; }
-    else if (!ps.length) { sub = kind === 'cfb' ? '4 picks per team' : '6 picks per team'; pill = '<span class="pill">Not started</span>'; }
-    else {
-      name = `${label} picks`;
-      const graded = ps.filter((p) => p.result).length;
-      if (d.status !== 'complete') { sub = `${ps.length} of ${d.total_picks} picks made`; pill = '<span class="pill">Draft closed</span>'; }
-      else if (graded === ps.length) { sub = `All ${ps.length} results in`; pill = '<span class="pill final">Final</span>'; }
-      else if (graded) { sub = `${graded} of ${ps.length} results in`; pill = '<span class="pill live">In progress</span>'; }
-      else { sub = `${ps.length} picks locked • results pending`; pill = '<span class="pill">Locked</span>'; }
-    }
-    out.push({ tab: 'football', kind, name, sub, pill });
+  const out = [];
+  out.push({ key: 'casino', day: 0, env: 'casino', name: 'Casino Night', tab: 'more', kind: 'blackjack',
+    status: bj.finalized ? 'final' : 'upcoming',
+    sub: bj.finalized ? `${tname(bj.first_team)} wins • Mug: ${esc(U.member(S, bj.mug_member_id)?.name || 'not awarded')}` : 'Blackjack + Roulette • 3 / 2 / 1 pts' });
+  out.push({ key: 'golf', day: 1, env: 'golf', name: 'Golf', tab: 'golf',
+    status: done ? 'final' : started ? 'live' : 'upcoming',
+    sub: done ? (g.placements ? `${tname(g.placements[0])} wins` : 'Tie, commissioner deciding') : started ? `${lead.pos_label.startsWith('T') ? 'Tied lead' : tname(lead.team_id)} ${U.fmtPar(lead.to_par)} • ${g.summary.map((x) => `${tlabel(U.team(S, x.team_id), 6)} ${x.thru ? `thru ${x.thru}` : 'not started'}`).join(', ')}` : 'Reems Creek • Team scramble • 4 / 2 / 1 pts' });
+  for (const [kind, day, name] of [['cfb', 1, 'College Football'], ['nfl', 2, 'NFL']]) {
+    const d = U.draft(S, kind); const ps = U.picksFor(S, kind); const graded = ps.filter((p) => p.result).length;
+    let status = 'upcoming', sub = `${d.rounds} picks per team • ATS`;
+    if (d.status === 'open') { const oc = U.onClock(S, kind); status = 'live'; sub = `${tname(oc.team)} on the clock • Round ${oc.round}`; }
+    else if (d.status === 'paused') { status = 'live'; sub = `Draft paused at pick ${d.pick_count + 1}`; }
+    else if (ps.length && graded === ps.length && d.status === 'complete') { status = 'final'; sub = S.teams.map((t) => `${tlabel(t, 6)} ${U.picksFor(S, kind, t.id).filter((p) => p.result === 'win').length}`).join(' • ') + ' wins'; }
+    else if (ps.length) { status = 'live'; sub = `${graded} of ${ps.length} results in`; }
+    out.push({ key: kind, day, env: kind, name, tab: 'football', kind, status, sub });
   }
   const tb = S.tiebreaker;
-  if (tb.status !== 'none') out.push({ tab: 'standings', name: 'SNF tiebreaker', sub: `${tname(tb.team_a)} vs ${tname(tb.team_b)}`, pill: tb.winner_team ? '<span class="pill final">Decided</span>' : '<span class="pill live">Sudden death</span>' });
+  out.push({ key: 'champ', day: 2, env: 'champ', name: 'Championship', tab: 'standings',
+    status: final() ? 'final' : tb.status !== 'none' ? 'live' : 'upcoming',
+    sub: final() ? `${tname(S.competition.champion_team_id)} are champions` : tb.status !== 'none' ? `SNF sudden death • ${tname(tb.team_a)} vs ${tname(tb.team_b)}` : 'Most points wins • SNF tiebreaker if needed' });
   return out;
+}
+function liveEvent() {
+  const ev = homeEvents();
+  const order = ['casino', 'golf', 'cfb', 'nfl', 'champ'];
+  const draftLive = ev.find((e) => (e.key === 'cfb' || e.key === 'nfl') && ['open', 'paused'].includes(U.draft(S, e.key).status));
+  if (draftLive) return draftLive.key;
+  const live = order.map((k) => ev.find((e) => e.key === k)).find((e) => e.status === 'live');
+  return live ? live.key : null;
+}
+const STATUS_PILL = { live: '<span class="pill live">Live</span>', final: '<span class="pill final">Final</span>', upcoming: '<span class="pill">Upcoming</span>' };
+function eventCard(e) {
+  return `<button class="ecard env-${e.env} is-${e.status}" data-act="goto" data-tab="${e.tab}" ${e.kind ? `data-kind="${e.kind}"` : ''}>
+    <span class="ec-art">${ENV_ART[e.env]()}</span><span class="ec-name">${esc(e.name)}</span><span class="ec-sub">${e.sub}</span>${STATUS_PILL[e.status]}</button>`;
+}
+const ENV_ART = { casino: () => ART.roulette(), golf: () => ART.mountains('day') + ART.flag(), cfb: () => ART.football(), nfl: () => ART.football(), champ: () => ART.trophy() };
+function liveHero(ev, live) {
+  const e = ev.find((x) => x.key === live) || ev.find((x) => x.status === 'upcoming');
+  if (!e) return '';
+  const cta = { casino: e.status === 'final' ? 'See results' : 'Event details', golf: 'Open leaderboard', cfb: e.status === 'live' && ['open', 'paused'].includes(U.draft(S, 'cfb').status) ? 'Enter the draft room' : 'See picks', nfl: e.status === 'live' && ['open', 'paused'].includes(U.draft(S, 'nfl').status) ? 'Enter the draft room' : 'See picks', champ: 'See standings' }[e.key];
+  return `<section class="section"><button class="live-hero env-${e.env}" data-act="goto" data-tab="${e.tab}" ${e.kind ? `data-kind="${e.kind}"` : ''}>
+    <span class="lh-art">${ENV_ART[e.env]()}</span>
+    <span class="lh-kick">${e.status === 'live' ? '<span class="pill live">Live now</span>' : '<span class="pill gold">Up next</span>'}<span class="sec-meta">${DAYS[e.day][0]}</span></span>
+    <div class="lh-title">${esc(e.name)}</div><div class="lh-sub">${e.sub}</div><span class="lh-cta">${cta} ›</span></button></section>`;
 }
 
 function championCard() {
   const c = S.competition; const t = U.team(S, c.champion_team_id); if (!t) return '';
   const s = S.standings.find((x) => x.team_id === t.id);
   const how = c.champion_method === 'tiebreaker' ? 'Won SNF sudden death' : c.champion_method === 'commissioner' ? 'Named by commissioner' : 'On points';
-  return `<section class="champ reveal" ${tstyle(t)}>
-    <div class="champ-inner">${teamMark(t, 'lg')}<div><div class="champ-label">WEEKEND CHAMPION</div>
+  return `<section class="champ reveal" ${tstyle(t)}>${ART.mountains('night')}
+    <div class="champ-inner">${ART.trophy()}<div style="min-width:0"><div class="champ-label">WEEKEND CHAMPION</div>
       <div class="champ-team">${esc(t.name)}</div><div class="champ-score">FINAL SCORE: ${s ? s.total : ''} PTS</div></div></div>
-    <div class="champ-foot"><span>${how}</span><span>ASHEVILLE 2026</span></div>
+    <div class="champ-foot"><span>${how}</span><button data-act="replay">Replay ›</button></div>
   </section>`;
 }
 
@@ -312,7 +366,9 @@ function viewGolf() {
   if (mine || isCommish()) views.push(['entry', 'Enter scores']);
   if (ui.golfView === 'entry' && !(mine || isCommish())) ui.golfView = 'board';
   if (ui.golfView === 'entry' && mine && !isCommish()) ui.golfTeam = mine;
-  return `<div class="seg" role="group">${views.map(([k, l]) => `<button data-act="golfview" data-v="${k}" aria-pressed="${ui.golfView === k}">${l}</button>`).join('')}</div>
+  return `<section class="hero golf">${ART.mountains('day')}<div class="fairway"></div>${ART.flag()}
+    <div class="hero-in"><div class="hero-kicker">Saturday • October 10</div><div class="hero-title">Reems Creek</div><div class="hero-sub">Par 71 • 4-man scramble • 4 / 2 / 1 pts</div></div></section>
+  <div class="seg" role="group">${views.map(([k, l]) => `<button data-act="golfview" data-v="${k}" aria-pressed="${ui.golfView === k}">${l}</button>`).join('')}</div>
   ${ui.golfView === 'board' ? golfBoard() : ui.golfView === 'card' ? golfCardView() : golfEntry()}`;
 }
 
@@ -320,9 +376,9 @@ function golfBoard() {
   const g = S.golf;
   const done = g.summary.every((x) => x.complete);
   return `<section class="section">
-    <div class="sec-head"><h2 class="sec-title">${done ? 'Final leaderboard' : 'Live leaderboard'}</h2><span class="sec-meta">Reems Creek • Par 71 • Scramble</span></div>
+    <div class="sec-head"><h2 class="sec-title">${done ? 'Final leaderboard' : 'Leaderboard'}</h2><span class="sec-meta">${done ? 'Final' : g.summary.some((x) => x.thru) ? 'Live • to par' : 'Not started'}</span></div>
     <div class="panel">
-      <div class="lb-head"><span>POS</span><span></span><span>TEAM</span><span>TO PAR</span><span>THRU</span><span></span></div>
+      <div class="lb-head"><span>POS</span><span></span><span>TEAM</span><span>PAR</span><span>THRU</span><span></span></div>
       ${g.summary.map((s) => { const t = U.team(S, s.team_id); return `<button class="row tbar" ${tstyle(t)} data-act="golfcard" data-team="${s.team_id}">
         <span class="lb-row"><span class="lb-pos">${s.pos_label}</span>${teamMark(t)}<span class="team-name">${esc(t.name)}</span>
         <span class="lb-par ${s.to_par < 0 ? 'under' : ''}">${s.thru ? U.fmtPar(s.to_par) : '--'}</span>
@@ -356,7 +412,7 @@ function scorecard(teamId) {
       <tbody><tr><td>PAR</td>${hs.map((h) => `<td class="muted">${h.par}</td>`).join('')}<td class="tot muted">${par}</td></tr>
       <tr><td>SCORE</td>${hs.map((h) => `<td>${scoreMark(sc[h.hole], h.par)}</td>`).join('')}<td class="tot">${tot}</td></tr></tbody></table></div>`;
   };
-  return `<div class="panel">
+  return `<div class="panel card-paper">
     <div class="team-head" ${tstyle(t)}>${teamMark(t)}<span class="team-name">${esc(t.name)}</span>
       <span class="rec">${s.thru ? U.fmtPar(s.to_par) : '--'}<small>${s.complete ? 'FINAL' : s.thru ? `THRU ${s.thru}` : 'NOT STARTED'}</small></span></div>
     ${nine(0)}<div style="height:1px;background:var(--line)"></div>${nine(9)}
@@ -365,7 +421,8 @@ function scorecard(teamId) {
       <tr><td class="l">Back 9</td><td>${s.back_strokes || '--'}</td><td>${s.back_strokes ? U.fmtPar(s.back_to_par) : '--'}</td></tr>
       <tr><td class="l">Total</td><td class="big">${s.strokes || '--'}</td><td class="big ${s.to_par < 0 ? 'under' : ''}">${s.thru ? U.fmtPar(s.to_par) : '--'}</td></tr>
     </tbody></table>
-    <div class="note" style="margin:0;border:0">Scorekeeper: ${esc(S.members.find((m) => m.team_id === teamId && m.role === 'scorekeeper')?.name || '--')}</div>
+    <div class="card-legend"><span><i class="l-e"></i>Eagle</span><span><i class="l-b"></i>Birdie</span><span><i class="l-bo"></i>Bogey</span><span><i class="l-db"></i>Double+</span></div>
+    <div class="note" style="border:0">Scorekeeper: ${esc(S.members.find((m) => m.team_id === teamId && m.role === 'scorekeeper')?.name || '--')}</div>
   </div>`;
 }
 
@@ -405,7 +462,9 @@ function viewFootball() {
   const opts = inDraft ? [['room', 'Draft room'], ['picks', 'Picks']] : [['picks', 'Picks'], ['board', 'Board']];
   let v = ui.fbView[kind];
   if (!opts.some(([k]) => k === v)) v = opts[0][0];
-  return `<div class="seg" role="group" aria-label="League">${['cfb', 'nfl'].map((k) => `<button data-act="fbkind" data-kind="${k}" aria-pressed="${kind === k}">${k === 'cfb' ? 'College' : 'NFL'}</button>`).join('')}</div>
+  return `<section class="hero football ${kind}"><div class="field"></div>${ART.football()}
+    <div class="hero-in"><div class="hero-kicker">${kind === 'cfb' ? 'Saturday • College Football' : 'Sunday • NFL'}</div><div class="hero-title">${kind === 'cfb' ? 'Saturday ATS' : 'Sunday ATS'}</div><div class="hero-sub">${d.rounds} picks per team • win = 1 pt • straight draft</div></div></section>
+  <div class="seg" role="group" aria-label="League">${['cfb', 'nfl'].map((k) => `<button data-act="fbkind" data-kind="${k}" aria-pressed="${kind === k}">${k === 'cfb' ? 'College' : 'NFL'}</button>`).join('')}</div>
   <div class="seg" role="group" style="margin-top:8px">${opts.map(([k, l]) => `<button data-act="fbview" data-v="${k}" aria-pressed="${v === k}">${l}</button>`).join('')}</div>
   ${v === 'room' ? draftRoom(kind) : v === 'board' ? draftBoard(kind, false) : picksView(kind)}`;
 }
@@ -440,15 +499,16 @@ function draftRoom(kind) {
   const drafter = oc && U.member(S, d.drafters[oc.team]);
   const cp = canPickNow(kind);
   const up = U.upcoming(S, kind, 7);
-  return `<section class="scorebug" ${tstyle(t)}>
-    <div class="bug-top">${kind.toUpperCase()} DRAFT<span>${oc ? `ROUND ${oc.round} • PICK ${oc.overall}` : 'COMPLETE'}</span></div>
-    ${oc ? `<div class="bug-main"><div><div class="otc-label">ON THE CLOCK</div>
+  return `<section class="scorebug ${oc && d.status === 'open' ? 'otc' : ''}" ${tstyle(t)}>
+    <div class="bug-top">${kind === 'cfb' ? 'CFB' : 'NFL'} DRAFT<span>${oc ? `${d.pick_count} OF ${d.total_picks} PICKS MADE` : 'COMPLETE'}</span></div>
+    ${oc ? `<div class="bug-main"><div class="otc-label">ON THE CLOCK</div>
         <div class="otc-team">${teamMark(t)}<span class="team-name">${esc(t.name)}</span></div>
-        <div class="otc-drafter">Drafter: ${esc(drafter?.name || 'not set')}</div></div>
-      <div class="clock" data-clock="${kind}" aria-live="off"></div></div>` : ''}
+        <div class="clock" data-clock="${kind}" aria-live="off"></div>
+        <div class="otc-sub">ROUND ${oc.round} • PICK ${oc.overall}</div>
+        <div class="otc-drafter">Drafter: ${esc(drafter?.name || 'not set')}</div></div>` : ''}
     <div class="order-strip" aria-label="Upcoming picks">${up.map((u, i) => { const ut = U.team(S, u.team); return `<span class="order-chip ${i === 0 ? 'now' : ''}" ${tstyle(ut)}>${teamMark(ut, 'sm')}<em>#${u.overall}</em></span>`; }).join('')}</div>
   </section>
-  ${cp.ok ? `<div class="your-turn">${cp.proxy && d.drafters[cp.team] !== me().id ? `TEST MODE: PICKING FOR ${tname(cp.team).toUpperCase()}` : "YOU'RE ON THE CLOCK • TAP A SIDE"}</div>` : ''}
+  ${cp.ok ? `<div class="your-turn">${cp.proxy && d.drafters[cp.team] !== me().id ? `TEST MODE: PICKING FOR ${tname(cp.team).toUpperCase()}` : "YOU'RE ON THE CLOCK • TAP A LINE"}</div>` : ''}
   ${d.status === 'paused' ? '<div class="note warn">The commissioner paused the draft.</div>' : ''}
   ${draftBoard(kind, cp.ok)}
   ${recentPicks(kind)}`;
@@ -464,7 +524,7 @@ function draftBoard(kind, pickable) {
   const games = S.games.filter((g) => g.kind === kind && g.active);
   const onClockTeam = pickable ? canPickNow(kind).team : null;
   if (!games.length) return `<div class="section"><div class="panel"><div class="empty"><b>No games on the slate yet</b>The commissioner enters every game and spread before the draft.</div></div></div>`;
-  return `<section class="section"><div class="sec-head"><h2 class="sec-title">Board</h2><span class="sec-meta">${games.length} games${pickable ? ' • tap a side' : ''}</span></div>
+  return `<section class="section"><div class="sec-head"><h2 class="sec-title">The board</h2><span class="sec-meta">${games.length} games${pickable ? ' • tap a line' : ''}</span></div>
   <div class="panel">${games.map((g) => {
     const oa = U.sideOwner(S, g.id, 'away'), oh = U.sideOwner(S, g.id, 'home');
     const mineOther = onClockTeam && ((oa && oa.team_id === onClockTeam) || (oh && oh.team_id === onClockTeam));
@@ -528,13 +588,13 @@ function viewStandings() {
   const bj = S.blackjack; const g = S.golf; const tb = S.tiebreaker;
   return `${final() ? championCard() : ''}
   <section class="section"><div class="sec-head"><h2 class="sec-title">Championship</h2><span class="sec-meta">${preEvent() ? 'Not started • ' : ''}Max 17 pts</span></div>
-    <div class="panel"><table class="tbl"><thead><tr><th></th><th class="l">Team</th><th>BJ</th><th>Golf</th><th>CFB</th><th>NFL</th><th>Tot</th></tr></thead><tbody>
+    <div class="panel"><table class="tbl"><thead><tr><th></th><th class="l">Team</th><th>Cas</th><th>Golf</th><th>CFB</th><th>NFL</th><th>Tot</th></tr></thead><tbody>
     ${S.standings.map((s) => { const t = U.team(S, s.team_id); return `<tr class="tbar" ${tstyle(t)}><td class="muted">${preEvent() ? '-' : s.rnk}</td><td class="l"><span style="display:inline-flex;gap:8px;align-items:center">${teamMark(t, 'sm')}${esc(t.short_name)}</span></td>
       <td>${s.blackjack}</td><td>${s.golf}</td><td>${s.cfb}</td><td>${s.nfl}</td><td class="big">${s.total}</td></tr>`; }).join('')}
     </tbody></table></div></section>
   ${tb.status !== 'none' ? tiebreakerCard() : ''}
   <section class="section"><div class="sec-head"><h2 class="sec-title">Event results</h2></div><div class="panel">
-    <div class="row ev"><span class="ev-name">Blackjack</span><span class="ev-sub">${bj.finalized ? `1st ${tname(bj.first_team)} • 2nd ${tname(bj.second_team)} • 3rd ${tname(bj.third_team)}` : 'Not final'}</span>${bj.finalized ? '<span class="pill final">3 / 2 / 1</span>' : '<span class="pill">Pending</span>'}</div>
+    <div class="row ev"><span class="ev-name">Casino Night</span><span class="ev-sub">${bj.finalized ? `1st ${tname(bj.first_team)} • 2nd ${tname(bj.second_team)} • 3rd ${tname(bj.third_team)}` : 'Not final'}</span>${bj.finalized ? '<span class="pill final">3 / 2 / 1</span>' : '<span class="pill">Pending</span>'}</div>
     <div class="row ev"><span class="ev-name">Golf</span><span class="ev-sub">${g.placements ? `1st ${tname(g.placements[0])} • 2nd ${tname(g.placements[1])} • 3rd ${tname(g.placements[2])}` : g.tie_pending ? 'Tie, awaiting commissioner' : 'In progress'}</span>${g.placements ? '<span class="pill final">4 / 2 / 1</span>' : '<span class="pill">Pending</span>'}</div>
     ${['cfb', 'nfl'].map((k) => `<div class="row ev"><span class="ev-name">${k === 'cfb' ? 'College ATS' : 'NFL ATS'}</span><span class="ev-sub">${S.teams.map((t) => { const r = U.atsRecord(S, k, t.id); return `${esc(t.short_name)} ${r.w}-${r.l}-${r.p}`; }).join(' • ')}</span><span class="pill">${k === 'cfb' ? '4' : '6'} picks</span></div>`).join('')}
   </div></section>`;
@@ -565,11 +625,11 @@ function tiebreakerCard() {
 
 // ---------------------------------------------------------------- MORE
 function viewMore() {
-  if (ui.more === 'blackjack') return sub('Blackjack', blackjackView());
+  if (ui.more === 'blackjack') return casinoPage();
   if (ui.more === 'teams') return sub('Teams', teamsView());
   if (ui.more === 'archive') return sub('Archive', archiveView());
   if (ui.more === 'commish' && isCommish()) return sub('Commissioner', commishView());
-  const items = [['blackjack', 'Blackjack', 'Final placements and the Mug'], ['teams', 'Teams & members', 'Rosters, scorekeepers, drafters'], ['archive', 'Archive', final() ? 'Final results from the weekend' : 'Full record, locks when final']];
+  const items = [['blackjack', 'Casino Night', 'Blackjack + Roulette results and the Mug'], ['teams', 'Teams & members', 'Rosters, scorekeepers, drafters'], ['archive', 'Archive', final() ? 'Final results from the weekend' : 'Full record, locks when final']];
   if (isCommish()) items.push(['commish', 'Commissioner', 'Control center']);
   return `<section class="section"><div class="panel">${items.map(([k, l, s]) => `<button class="row" data-act="more" data-v="${k}"><span style="flex:1"><span class="team-name" style="font-size:18px">${l}</span><div class="muted" style="font-size:13px">${s}</div></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>`).join('')}</div></section>
   <section class="section page-pad"><button class="btn block" data-act="logout">Sign out / switch user</button>
@@ -577,16 +637,25 @@ function viewMore() {
 }
 const sub = (title, body) => `<div class="page-pad" style="padding-top:12px"><button class="btn sm" data-act="more" data-v="">‹ More</button></div>${body}`;
 
+function casinoPage() {
+  return `<section class="hero casino"><div class="casino-deco">${ART.roulette()}${ART.card('A', '♠', 'c2')}${ART.card('K', '♥')}${ART.chip('var(--chip-r)', 'k1')}${ART.chip('var(--chip-g)', 'k2')}${ART.chip('var(--chip-b)', 'k3')}</div>
+    <div class="hero-in"><div class="hero-kicker">Friday • October 9</div><div class="hero-title">Casino Night</div><div class="hero-sub">Blackjack + Roulette</div></div></section>
+  <div class="page-pad" style="padding-top:12px"><button class="btn sm" data-act="more" data-v="">‹ More</button></div>
+  ${blackjackView()}
+  <div class="rail-foot">${ART.beerCan()}<span>One combined result • 3 / 2 / 1</span></div>`;
+}
 function blackjackView() {
   const bj = S.blackjack;
-  if (!bj.finalized) return '<div class="section"><div class="panel"><div class="empty"><b>Blackjack results pending</b>The commissioner enters the final placements when play is done.</div></div></div>';
-  const rows = [[bj.first_team, '1st', 3], [bj.second_team, '2nd', 2], [bj.third_team, '3rd', 1]];
+  if (!bj.finalized) return '<div class="section"><div class="panel felt-panel"><div class="empty"><b>Casino Night results pending</b>Blackjack and roulette count as one event. The commissioner enters the final 1st, 2nd and 3rd place teams when the tables close.</div></div></div>';
+  const rows = [[bj.first_team, 1, 3], [bj.second_team, 2, 2], [bj.third_team, 3, 1]];
   const mug = U.member(S, bj.mug_member_id);
-  return `<section class="section"><div class="sec-head"><h2 class="sec-title">Blackjack final</h2></div><div class="panel">
-    ${rows.map(([tid, l, p]) => { const t = U.team(S, tid); return `<div class="row tbar stand-row" ${tstyle(t)}><span class="rank">${l}</span>${teamMark(t)}<span class="team-name">${esc(t.name)}</span><span class="pts">${p}<small>PTS</small></span><span></span></div>`; }).join('')}
+  return `<section class="section"><div class="sec-head"><h2 class="sec-title">Casino Night</h2><span class="sec-meta">Final</span></div>
+    <div class="panel felt-panel"><div class="board-head"><span>BLACKJACK + ROULETTE</span><b>FINAL</b></div>
+    ${rows.map(([tid, r, pt]) => { const t = U.team(S, tid); return `<div class="row tbar casino-place" ${tstyle(t)}><span class="rank">${r}</span>${teamMark(t)}<span class="team-name">${esc(t.name)}</span><span class="pts">${pt}<small>${pt === 1 ? 'PT' : 'PTS'}</small></span></div>`; }).join('')}
   </div></section>
-  <section class="section"><div class="sec-head"><h2 class="sec-title">Mug winner</h2><span class="sec-meta">Individual • 0 pts</span></div><div class="panel">
-    <div class="row">${mug ? `${teamMark(U.team(S, mug.team_id))}<span class="team-name">${esc(mug.name)}</span>` : '<span class="muted">Not awarded</span>'}</div></div></section>`;
+  <section class="section"><div class="sec-head"><h2 class="sec-title">Mug winner</h2><span class="sec-meta">Individual • 0 pts</span></div><div class="panel felt-panel">
+    <div class="mug-card"><span class="mug-icon"><svg viewBox="0 0 24 24"><path d="M5 6h11v11a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z"/><path d="M16 9h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2"/><path d="M8 3v1M11 2v2M14 3v1"/></svg></span>
+      ${mug ? `<span style="min-width:0"><b>${esc(mug.name)}</b><small>${esc(U.team(S, mug.team_id)?.name || '')}</small></span>` : '<span class="muted">Not awarded</span>'}</div></div></section>`;
 }
 
 function teamsView() {
@@ -601,14 +670,15 @@ function teamsView() {
 }
 
 function archiveView() {
-  return `${final() ? championCard() : '<div class="note warn">The weekend is still in progress. This page becomes the permanent record once the commissioner finalizes.</div>'}
+  return `<section class="hero home" style="height:110px">${ART.mountains('night')}<div class="topo-layer"></div><div class="hero-in"><div class="home-id"><b>The Record</b><span>${esc(B('eventName', "QUYLE'S"))} ${esc(B('eventTagline', 'BACHELOR PARTY'))} • ${esc(B('year', '2026'))}</span></div></div></section>
+  ${final() ? championCard() : '<div class="note warn">The weekend is still in progress. This page becomes the permanent record once the commissioner finalizes.</div>'}
   <section class="section"><div class="sec-head"><h2 class="sec-title">Final standings</h2></div>${standingsList()}</section>
   ${S.tiebreaker.status !== 'none' ? tiebreakerCard() : ''}
   ${blackjackView()}
   ${golfBoard()}
   ${S.teams.map((t) => `<section class="section">${scorecard(t.id)}</section>`).join('')}
-  <div class="sec-head" style="margin-top:22px"><h2 class="sec-title">College picks</h2></div>${picksView('cfb')}
-  <div class="sec-head" style="margin-top:22px"><h2 class="sec-title">NFL picks</h2></div>${picksView('nfl')}`;
+  <div class="sec-head" style="margin:22px 16px 0"><h2 class="sec-title">College football picks</h2></div>${picksView('cfb')}
+  <div class="sec-head" style="margin:22px 16px 0"><h2 class="sec-title">NFL picks</h2></div>${picksView('nfl')}`;
 }
 
 // ---------------------------------------------------------------- COMMISSIONER
@@ -622,7 +692,7 @@ function commishView() {
   const c = S.competition;
   return `<section class="section"><div class="panel">
     ${acc('weekend', 'Weekend', cWeekend, `<span class="pill ${c.status === 'final' ? 'final' : c.status === 'live' ? 'live' : ''}">${c.status}</span>`)}
-    ${acc('bj', 'Blackjack', cBlackjack, S.blackjack.finalized ? '<span class="pill final">Final</span>' : '')}
+    ${acc('bj', 'Casino Night', cBlackjack, S.blackjack.finalized ? '<span class="pill final">Final</span>' : '')}
     ${acc('golf', 'Golf', cGolf, S.golf.tie_pending ? '<span class="pill gold">Tie</span>' : '')}
     ${acc('cfbslate', 'CFB draft slate', () => cSlate('cfb'), `<span class="pill">${S.games.filter((g) => g.kind === 'cfb' && g.active).length} games</span>`)}
     ${acc('cfb', 'CFB draft', () => cDraft('cfb'), `<span class="pill">${U.draft(S, 'cfb').status}</span>`)}
@@ -657,7 +727,7 @@ function cWeekend() {
 function cBlackjack() {
   const bj = S.blackjack;
   const mugOpts = `<option value="">No Mug winner</option>${S.teams.map((t) => `<optgroup label="${esc(t.name)}">${S.members.filter((m) => m.team_id === t.id).map((m) => `<option value="${m.id}" ${bj.mug_member_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>`).join('')}`;
-  return `<p class="help">1st = 3 pts, 2nd = 2, 3rd = 1. Mug is individual and earns 0.</p>
+  return `<p class="help">Blackjack + Roulette count as one combined event. Enter the final team order: 1st = 3 pts, 2nd = 2, 3rd = 1. The Mug is an individual award worth 0.</p>
   <div class="grid-3">${[['first', '1st', bj.first_team], ['second', '2nd', bj.second_team], ['third', '3rd', bj.third_team]].map(([k, l, v]) =>
     `<div class="field"><label>${l}</label><select data-k="bj.${k}">${teamOpts(v)}</select></div>`).join('')}</div>
   <div class="field"><label>Mug winner</label><select data-k="bj.mug">${mugOpts}</select></div>
@@ -780,7 +850,7 @@ function cTesting() {
   <button class="btn sm block" data-act="c-demogolf">Fill golf scores</button>
   <div class="btn-row" style="margin-top:10px"><button class="btn sm" data-act="c-demores" data-kind="cfb">Random CFB results</button><button class="btn sm" data-act="c-demores" data-kind="nfl">Random NFL results</button></div>` : ''}
   <div class="sub-h">Reset a section</div>
-  <div class="btn-row">${[['blackjack', 'Blackjack'], ['golf', 'Golf'], ['cfb_picks', 'CFB picks'], ['nfl_picks', 'NFL picks'], ['cfb', 'CFB all'], ['nfl', 'NFL all'], ['tiebreaker', 'Tiebreaker'], ['ticker', 'Ticker'], ['final', 'Un-finalize']].map(([k, l]) => `<button class="btn sm danger" data-act="c-reset" data-v="${k}">${l}</button>`).join('')}</div>
+  <div class="btn-row">${[['blackjack', 'Casino Night'], ['golf', 'Golf'], ['cfb_picks', 'CFB picks'], ['nfl_picks', 'NFL picks'], ['cfb', 'CFB all'], ['nfl', 'NFL all'], ['tiebreaker', 'Tiebreaker'], ['ticker', 'Ticker'], ['final', 'Un-finalize']].map(([k, l]) => `<button class="btn sm danger" data-act="c-reset" data-v="${k}">${l}</button>`).join('')}</div>
   <button class="btn danger block" style="margin-top:10px" data-act="c-reset" data-v="all">Reset everything</button>
   <div class="sub-h">Go live</div>
   <p class="help">Wipes every result, pick, score, game and ticker item, turns off test helpers, and signs out everyone except you. Teams, members, PINs and pars are kept.</p>
@@ -792,7 +862,7 @@ function modal() {
   const m = ui.modal; if (!m) return '';
   let body = '';
   if (m.type === 'confirm') {
-    body = `<h3>${esc(m.title)}</h3>${m.big ? `<div class="big-pick">${esc(m.big)}</div>` : ''}<p>${esc(m.body)}</p>
+    body = `<h3>${esc(m.title)}</h3>${m.kicker ? `<div class="sheet-kicker">${esc(m.kicker)}</div>` : ''}${m.big ? `<div class="big-pick">${esc(m.big)}</div>` : ''}${m.meta ? `<div class="sheet-meta">${esc(m.meta)}</div>` : ''}<p>${esc(m.body)}</p>
       <div class="btn-row"><button class="btn" data-act="m-close">Cancel</button><button class="btn ${m.danger ? 'danger' : 'primary'}" data-act="m-ok">${esc(m.ok)}</button></div>`;
   } else if (m.type === 'game') {
     const g = m.id ? U.game(S, m.id) : null; const picked = g && S.picks.some((p) => p.game_id === g.id);
@@ -871,6 +941,7 @@ const A = {
       const sc = new Set(S.golf.scores.filter((x) => x.team_id === teamId).map((x) => x.hole));
       const next = S.golf.holes.find((h) => h.hole > hole && !sc.has(h.hole)) || S.golf.holes.find((h) => !sc.has(h.hole));
       ui.entryHole = next ? next.hole : hole; ui.entryVal = null; render();
+      cheer(v - S.golf.holes.find((h) => h.hole === hole).par);
     }
   },
   clearhole: (el) => confirmThen({ title: 'Clear score', body: `Remove the score on hole ${ui.entryHole}?`, ok: 'Clear', danger: true },
@@ -882,10 +953,12 @@ const A = {
     const g = U.game(S, +el.dataset.g); const s = el.dataset.s; const kind = el.dataset.kind;
     const sp = s === 'home' ? g.home_spread : g.away_spread; const tm = s === 'home' ? g.home_team : g.away_team;
     const cp = canPickNow(kind);
-    confirmThen({ title: 'Confirm pick', big: `${tm} ${U.fmtSpread(sp)}`, body: `vs ${s === 'home' ? g.away_team : g.home_team}. Draft this spread for ${U.team(S, cp.team)?.name}? It locks at this number.`, ok: 'Draft' },
+    const oc = U.onClock(S, kind);
+    confirmThen({ title: 'Confirm pick', kicker: U.team(S, cp.team)?.name || '', big: `${tm} ${U.fmtSpread(sp)}`, meta: `${kind === 'cfb' ? 'CFB' : 'NFL'} • ROUND ${oc.round} • PICK ${oc.overall}`, body: `vs ${s === 'home' ? g.away_team : g.home_team}. This spread locks the moment you draft it.`, ok: 'Draft' },
       () => run('draft_pick', { p_kind: kind, p_game_id: g.id, p_side: s, p_for_team: cp.proxy ? cp.team : null }, `Drafted ${tm} ${U.fmtSpread(sp)}`));
   },
   more: (el) => { ui.more = el.dataset.v || null; render(); window.scrollTo(0, 0); },
+  replay: () => showReveal(),
   logout: () => confirmThen({ title: 'Sign out', body: 'You will need your PIN to sign back in.', ok: 'Sign out' }, () => signOut()),
   acc: (el) => { ui.acc[el.dataset.v] = !ui.acc[el.dataset.v]; render(); },
 
@@ -900,10 +973,10 @@ const A = {
   'c-team': (el) => { const id = el.dataset.team; run('team_update', { p_team: +id, p_name: val(`tm.${id}.name`), p_short: val(`tm.${id}.short`), p_color: val(`tm.${id}.color`), p_logo: val(`tm.${id}.logo`) }, 'Team saved').then(() => clearForm(`tm.${id}.`)); },
   'c-bj': () => {
     const args = { p_first: num(val('bj.first')), p_second: num(val('bj.second')), p_third: num(val('bj.third')), p_mug: num(val('bj.mug')), p_finalize: true };
-    confirmThen({ title: 'Finalize blackjack', body: `1st ${tname(args.p_first)}, 2nd ${tname(args.p_second)}, 3rd ${tname(args.p_third)}. Awards 3 / 2 / 1.`, ok: 'Finalize' },
-      () => run('bj_save', args, 'Blackjack final').then(() => clearForm('bj.')));
+    confirmThen({ title: 'Finalize Casino Night', body: `1st ${tname(args.p_first)}, 2nd ${tname(args.p_second)}, 3rd ${tname(args.p_third)}. Awards 3 / 2 / 1.`, ok: 'Finalize' },
+      () => run('bj_save', args, 'Casino Night final').then(() => clearForm('bj.')));
   },
-  'c-bjclear': () => confirmThen({ title: 'Clear blackjack', body: 'Remove blackjack placements and points?', ok: 'Clear', danger: true }, () => run('bj_clear', {}, 'Cleared')),
+  'c-bjclear': () => confirmThen({ title: 'Clear Casino Night', body: 'Remove Casino Night placements and points?', ok: 'Clear', danger: true }, () => run('bj_clear', {}, 'Cleared')),
   'c-golftie': () => { const o = [1, 2, 3].map((i) => num(val(`gt.${i}`))); confirmThen({ title: 'Set golf order', body: `1st ${tname(o[0])}, 2nd ${tname(o[1])}, 3rd ${tname(o[2])}.`, ok: 'Set order' }, () => run('golf_resolve_tie', { p_order: o }, 'Golf order set').then(() => clearForm('gt.'))); },
   'c-golftieclear': () => run('golf_resolve_tie', { p_order: null }, 'Override cleared'),
   'c-draftcfg': (el) => {
@@ -1028,9 +1101,67 @@ document.addEventListener('change', (ev) => {
 });
 document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && ui.modal) A['m-close'](); });
 
+// ---------------------------------------------------------------- broadcast moments
+// "The pick is in": every connected phone, about two seconds, never blocks taps.
+function announcePick(p) {
+  if (!p) return;
+  const t = U.team(S, p.team_id);
+  document.querySelector('.announce')?.remove();
+  const el = document.createElement('div');
+  el.className = 'announce'; el.setAttribute('role', 'status');
+  el.innerHTML = `<div class="announce-card" ${tstyle(t)}><div class="an-top">THE PICK IS IN</div>
+    <div class="an-team">${t ? `<b>${esc(t.name)}</b>SELECTS` : ''}</div>
+    <div class="an-pick">${esc(p.selected_team)} ${U.fmtSpread(p.spread)}</div>
+    <div class="an-foot">${p.kind === 'cfb' ? 'CFB' : 'NFL'} DRAFT • ROUND ${p.round} • PICK ${p.pick_no}</div></div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2300);
+}
+// Championship reveal: plays once per phone when the weekend is finalized; replayable.
+const REVEAL_KEY = 'qk26.revealed';
+function maybeReveal(wasFinal) {
+  const f = S.competition.status === 'final' && S.competition.finalized_at;
+  if (!f) return;
+  let seen = null; try { seen = localStorage.getItem(REVEAL_KEY); } catch (e) { /* private mode */ }
+  if (seen === f) return;
+  try { localStorage.setItem(REVEAL_KEY, f); } catch (e) { /* ignore */ }
+  void wasFinal;
+  showReveal();
+}
+function showReveal() {
+  const c = S.competition; const t = U.team(S, c.champion_team_id); if (!t) return;
+  const s = S.standings.find((x) => x.team_id === t.id);
+  document.querySelector('.reveal-ov')?.remove();
+  const el = document.createElement('div');
+  el.className = 'reveal-ov'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-label', 'Weekend champions');
+  const conf = Array.from({ length: 36 }, (_, i) => `<i style="left:${(i * 37) % 100}%;animation-duration:${3.2 + ((i * 13) % 20) / 10}s;animation-delay:${1.4 + ((i * 7) % 30) / 10}s"></i>`).join('');
+  el.innerHTML = `<div class="confetti">${conf}</div>${ART.mountains('night')}
+    <div class="rv-year">${esc(B('year', '2026'))}</div>
+    <div class="rv-event">${B('eventLogo', null) ? `<img src="${esc(B('eventLogo'))}" alt="">` : `<b>${esc(B('eventName', "QUYLE'S"))}</b><span>${esc(B('eventTagline', 'BACHELOR PARTY'))}</span>`}</div>
+    <div class="rv-trophy">${ART.trophy()}</div>
+    <div class="rv-label">WEEKEND CHAMPIONS</div>
+    <div class="rv-team" ${tstyle(t)}>${esc(t.name)}</div>
+    <div class="rv-pts">${s ? s.total : ''} PTS</div>
+    <div class="rv-loc">${esc(titleCase(B('location', 'ASHEVILLE, NORTH CAROLINA')))}</div>
+    <div class="rv-skip">TAP TO CONTINUE</div>`;
+  const close = () => { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 600); };
+  el.addEventListener('click', close);
+  document.body.appendChild(el);
+  setTimeout(close, 7500);
+}
+// Golf: brief, never blocking, only for good holes.
+function cheer(rel) {
+  const msg = rel <= -2 ? 'WHAT A SHOT!' : rel === -1 ? 'NICE BIRDIE!' : rel === 0 ? 'SOLID PAR' : null;
+  if (!msg) return;
+  document.querySelector('.cheer')?.remove();
+  const el = document.createElement('div');
+  el.className = `cheer ${rel === 0 ? 'par' : ''}`; el.textContent = msg; el.setAttribute('role', 'status');
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
 // ---------------------------------------------------------------- boot
 if (!api.configured) {
-  $app.innerHTML = `<div class="login"><div class="login-mark"><h1>SETUP NEEDED</h1></div><div class="rule"></div>
+  $app.innerHTML = `<div class="login"><div class="login-sky"></div>${ART.mountains('dusk')}<div class="login-fade"></div><div class="login-mark"><div class="event-id"><div class="eid-name" style="font-size:44px">SETUP NEEDED</div></div></div>
     <p class="muted" style="text-align:center;max-width:330px">Add your Supabase URL and anon key to <b>config.js</b>. See SETUP.md.</p></div>`;
 } else if (api.token) {
   start();

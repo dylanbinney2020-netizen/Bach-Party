@@ -82,6 +82,13 @@ export function atsRecord(S, kind, teamId) {
   const c = (r) => ps.filter((p) => p.result === r).length;
   return { w: c('win'), l: c('loss'), p: c('push'), pending: ps.filter((p) => !p.result).length, n: ps.length };
 }
+// Server lines use stable wording (and {T1}-style team tokens); presentation
+// wording lives here so renames never need a database change.
 export function tickerText(S, text) {
-  return text.replace(/\{T([123])\}/g, (_, id) => (team(S, +id)?.name || `Team ${id}`).toUpperCase());
+  return text
+    .replace(/^BLACKJACK FINAL: /, 'CASINO NIGHT FINAL • ')
+    .replace(/^BLACKJACK RESULTS CORRECTED BY COMMISSIONER$/, 'CASINO NIGHT RESULTS CORRECTED')
+    .replace(/ MARKED (WIN|LOSS|PUSH)$/, ' • $1')
+    .replace(/ RESET TO PENDING$/, ' • BACK TO PENDING')
+    .replace(/\{T([123])\}/g, (_, id) => (team(S, +id)?.name || `Team ${id}`).toUpperCase());
 }
