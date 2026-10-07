@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Quyle's app, single-file build 2026-10-07T19:02:03Z. Upload this one file; never upload config.js. -->
+<!-- Quyle's app, single-file build 2026-10-07T19:26:08Z. Upload this one file; never upload config.js. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1C15">
@@ -782,6 +782,28 @@ body.in-chat main { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-in
 .photo-ov img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
 .photo-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 20px; background: rgba(239,230,209,.12); color: var(--cream); font-size: 18px; }
 
+/* ===================== Chat reactions ===================== */
+.msg { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.msg-reacts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+.msg-reacts:empty { display: none; }
+.msg.mine .msg-reacts { justify-content: flex-end; }
+.react-pill { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 2px 8px; border-radius: 14px; font-size: 14px; line-height: 1;
+  background: rgba(10,24,18,.75); border: 1px solid var(--line-2); color: var(--cream); }
+.react-pill b { font: 800 12px/1 var(--display); letter-spacing: .02em; }
+.react-pill.mine { border-color: var(--gold); background: rgba(200,165,91,.22); }
+.msg.mine .react-pill { background: rgba(21,36,27,.12); border-color: rgba(21,36,27,.25); color: var(--ink); }
+.msg.mine .react-pill.mine { border-color: var(--gold-d); background: rgba(200,165,91,.35); }
+.react-ov { position: fixed; inset: 0; z-index: 110; background: rgba(4,10,7,.45); }
+.react-bar { position: fixed; display: flex; gap: 4px; padding: 6px; border-radius: 30px; background: linear-gradient(180deg, #23493B, #173427);
+  border: 1px solid rgba(200,165,91,.6); box-shadow: 0 14px 34px rgba(0,0,0,.5); animation: up .15s ease-out; }
+.react-opt { width: 50px; height: 50px; border-radius: 25px; font-size: 28px; line-height: 1; display: grid; place-items: center; transition: transform .08s; }
+.react-opt:active { transform: scale(1.18); }
+.react-opt.on { background: rgba(200,165,91,.3); box-shadow: inset 0 0 0 2px var(--gold); }
+.react-group { margin-bottom: 12px; }
+.react-head { display: flex; align-items: center; gap: 8px; font-size: 22px; padding: 4px 0; }
+.react-head span { font: 800 14px/1 var(--display); letter-spacing: .14em; color: var(--gold-l); text-transform: uppercase; }
+.react-head b { margin-left: auto; font: 800 16px/1 var(--display); color: var(--cream); }
+
 </style>
 </head>
 <body>
@@ -1149,7 +1171,7 @@ let stopLive = null;
 let stopChat = null;
 // Chat Room state. Messages load only when Chat is opened; the badge uses a tiny status call.
 const chat = { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false,
-  available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null };
+  available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null, reacts: new Map(), reactV: -1 };
 
 const ui = {
   tab: 'home', expanded: {}, golfView: 'board', golfTeam: 1, entryHole: null, entryVal: null,
@@ -1284,7 +1306,7 @@ async function signOut(expired = false) {
   try {
     stopLive && stopLive(); stopLive = null;
     stopChat && stopChat(); stopChat = null;
-    Object.assign(chat, { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false, available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null });
+    Object.assign(chat, { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false, available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null, reacts: new Map(), reactV: -1 });
     exitTv();
     refetchQueued = false;
     await api.logout(!expired);                 // an expired login has nothing to end on the server
@@ -2101,7 +2123,13 @@ function cTesting() {
 function modal() {
   const m = ui.modal; if (!m) return '';
   let body = '';
-  if (m.type === 'cage') {
+  if (m.type === 'reacts') {
+    const r = chat.reacts.get(m.id) || new Map();
+    body = `<h3>Reactions</h3>${REACTS.map(([k, e, l]) => { const who = [...r.entries()].filter(([, kind]) => kind === k).map(([mid]) => U.member(S, mid)).filter(Boolean);
+      return who.length ? `<div class="react-group"><div class="react-head">${e}<span>${l}</span><b>${who.length}</b></div>${who.map((x) => `<div class="kv"><span>${esc(x.name)}</span><span>${esc(U.team(S, x.team_id)?.name || '')}</span></div>`).join('')}</div>` : ''; }).join('') || '<p>No reactions.</p>'}
+      <p class="help">Press and hold any message to react. Tap your reaction again to take it back.</p>
+      <button class="btn block" data-act="m-close">Close</button>`;
+  } else if (m.type === 'cage') {
     const mem = U.member(S, m.id); const t = mem && U.team(S, mem.team_id);
     const x = (S.casino_bank && S.casino_bank.players.find((y) => y.member_id === m.id)) || {};
     const tx = ((S.casino_bank && S.casino_bank.txns) || []).filter((y) => y.member_id === m.id && ['bank', 'withdraw', 'rebuy', 'correction'].includes(y.kind) && !y.voided_at).slice(0, 4);
@@ -2273,6 +2301,7 @@ const A = {
   'chat-photo': () => { const i = photoInput(); i.value = ''; i.click(); },
   'chat-photo-clear': () => { clearPhoto(); render(); },
   'chat-view': (el) => viewPhoto(el.dataset.src),
+  'react-who': (el) => { ui.modal = { type: 'reacts', id: +el.dataset.mid }; render(); },
   'chat-older': () => loadOlder(),
   'chat-jump': () => { chat.newBelow = 0; paintJump(); window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }); markReadSoon(); },
   'sb-tv': () => enterTv(),
@@ -2452,8 +2481,13 @@ async function chatCall(fn, args) {
     throw e;
   }
 }
-async function chatStatus() {
-  try { const r = await chatCall('chat_status', {}); if (!r) return; chat.unread = r.unread; chat.readOnly = !!r.read_only; paintBadge(); }
+async function chatStatus(skipBadge = false) {
+  try {
+    const r = await chatCall('chat_status', {}); if (!r) return;
+    if (!skipBadge) { chat.unread = r.unread; paintBadge(); }
+    chat.readOnly = !!r.read_only;
+    if (chat.loaded && r.react_v != null && r.react_v !== chat.reactV) loadReactions();
+  }
   catch { /* chat not set up yet, or offline: the rest of the app is unaffected */ }
 }
 function addMsgs(list) {
@@ -2470,7 +2504,7 @@ async function openChat(fresh) {
   chatStatus();
   if (!chat.loaded && !chat.loading) {
     chat.loading = true; chat.error = '';
-    try { const r = await chatCall('chat_history', { p_before: null, p_limit: 50 }); if (r) { addMsgs(r.messages); syncTo(r.messages); chat.hasMore = r.has_more; chat.loaded = true; } }
+    try { const r = await chatCall('chat_history', { p_before: null, p_limit: 50 }); if (r) { addMsgs(r.messages); syncTo(r.messages); chat.hasMore = r.has_more; chat.loaded = true; loadReactions(); } }
     catch (e) { chat.error = chat.available ? 'Chat could not load. It will retry automatically.' : 'Chat is not set up yet.'; }
     chat.loading = false;
     if (ui.tab === 'chat') { render(); window.scrollTo(0, document.documentElement.scrollHeight); }
@@ -2505,7 +2539,7 @@ function markReadSoon() {
     try { const r = await chatCall('chat_mark_read', { p_upto: upto }); if (r) { chat.unread = r.unread; paintBadge(); } } catch { /* next time */ }
   }, 350);
 }
-function onChatSignal() { if (chatActive() && chat.loaded) chatCatchUp(false).then(() => (nearBottom() ? markReadSoon() : chatStatus())); else chatStatus(); }
+function onChatSignal() { if (chatActive() && chat.loaded) chatCatchUp(false).then(() => { const b = nearBottom(); if (b) markReadSoon(); chatStatus(b); }); else chatStatus(); }
 window.addEventListener('scroll', () => { if (ui.tab === 'chat' && nearBottom()) markReadSoon(); }, { passive: true });
 
 const DAY = (iso) => new Date(iso).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }).toUpperCase();
@@ -2515,7 +2549,7 @@ function msgHtml(m, prev) {
   const day = !prev || DAY(prev.created_at) !== DAY(m.created_at) ? `<div class="chat-day"><span>${DAY(m.created_at)}</span></div>` : '';
   return `${day}<div class="msg ${mine ? 'mine' : ''}" data-mid="${m.id}" ${tstyle(t)}><div class="msg-who"><b>${esc(m.sender_name)}</b> · ${esc(t ? t.name : '')}</div>
     ${m.media_path ? `<button class="msg-media" data-act="chat-view" data-src="${esc(mediaUrl(m.media_path))}" aria-label="Open photo from ${esc(m.sender_name)}"><img src="${esc(mediaUrl(m.media_path))}" alt="Photo from ${esc(m.sender_name)}" loading="lazy" ${m.media_w && m.media_h ? `style="aspect-ratio:${m.media_w} / ${m.media_h}"` : ''}></button>` : ''}
-    ${m.body ? `<div class="msg-body">${esc(m.body)}</div>` : ''}<div class="msg-time">${TIME(m.created_at)}</div></div>`;
+    ${m.body ? `<div class="msg-body">${esc(m.body)}</div>` : ''}<div class="msg-time">${TIME(m.created_at)}</div><div class="msg-reacts" data-reacts="${m.id}">${reactsHtml(m.id)}</div></div>`;
 }
 function messagesHtml() { return chat.msgs.map((m, i) => msgHtml(m, chat.msgs[i - 1])).join(''); }
 function appendMessages() {
@@ -2643,6 +2677,66 @@ function viewPhoto(src) {
   document.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', k); } });
   document.body.appendChild(ov);
 }
+// ---- reactions: press and hold a message ----
+const REACTS = [['heart', '❤️', 'Heart'], ['like', '👍', 'Like'], ['dislike', '👎', 'Dislike'], ['laugh', '😂', 'Laugh']];
+const REACT_EMOJI = Object.fromEntries(REACTS.map(([k, e]) => [k, e]));
+function reactsHtml(mid) {
+  const r = chat.reacts.get(mid); if (!r || !r.size) return '';
+  const mine = me() && r.get(me().id);
+  return REACTS.map(([k, e, l]) => { const n = [...r.values()].filter((x) => x === k).length;
+    return n ? `<button class="react-pill ${mine === k ? 'mine' : ''}" data-act="react-who" data-mid="${mid}" aria-label="${l} ${n}. See who reacted">${e}<b>${n}</b></button>` : ''; }).join('');
+}
+function paintReacts(mid) { const el = document.querySelector(`[data-reacts="${mid}"]`); if (el) el.innerHTML = reactsHtml(mid); }
+let reactLoading = false;
+async function loadReactions() {
+  if (reactLoading || !chat.msgs.length) return; reactLoading = true;
+  try {
+    const r = await chatCall('chat_reactions', { p_min: chat.msgs[0].id, p_max: chat.msgs[chat.msgs.length - 1].id }); if (!r) return;
+    const next = new Map();
+    for (const x of r.reactions) { if (!next.has(x.message_id)) next.set(x.message_id, new Map()); next.get(x.message_id).set(x.member_id, x.kind); }
+    for (const m of chat.msgs) { const a = chat.reacts.get(m.id), b = next.get(m.id); if (JSON.stringify(a ? [...a] : []) !== JSON.stringify(b ? [...b] : [])) { if (b) chat.reacts.set(m.id, b); else chat.reacts.delete(m.id); paintReacts(m.id); } }
+    chat.reactV = r.react_v;
+  } catch { /* retried on the next signal */ } finally { reactLoading = false; }
+}
+async function react(mid, kind) {
+  closePicker();
+  const meId = me().id; const cur = chat.reacts.get(mid) || new Map(); const before = cur.get(meId) || null;
+  const next = before === kind ? null : kind;                    // same one again = take it back
+  const map = new Map(cur); if (next) map.set(meId, next); else map.delete(meId);
+  if (map.size) chat.reacts.set(mid, map); else chat.reacts.delete(mid); paintReacts(mid);
+  try { await chatCall('chat_react', { p_message_id: mid, p_kind: next }); }
+  catch (e) { const back = new Map(map); if (before) back.set(meId, before); else back.delete(meId); if (back.size) chat.reacts.set(mid, back); else chat.reacts.delete(mid); paintReacts(mid);
+    toast(/Could not find the function|PGRST202/i.test(e.message || '') ? "Reactions aren't set up yet." : e.message, 'err'); }
+}
+let pickerEl = null;
+function closePicker() { if (pickerEl) { pickerEl.remove(); pickerEl = null; } }
+function openPicker(msgEl) {
+  if (!msgEl || chat.readOnly || final()) return;
+  const mid = +msgEl.dataset.mid; closePicker();
+  const mine = (chat.reacts.get(mid) || new Map()).get(me().id);
+  pickerEl = document.createElement('div'); pickerEl.className = 'react-ov';
+  pickerEl.innerHTML = `<div class="react-bar" role="menu" aria-label="React">${REACTS.map(([k, e, l]) => `<button role="menuitem" class="react-opt ${mine === k ? 'on' : ''}" data-react="${k}" aria-label="${l}${mine === k ? ' (tap to remove)' : ''}">${e}</button>`).join('')}</div>`;
+  document.body.appendChild(pickerEl);
+  const r = msgEl.getBoundingClientRect(), bar = pickerEl.querySelector('.react-bar'), bw = bar.offsetWidth, bh = bar.offsetHeight;
+  const top = r.top - bh - 10 > 70 ? r.top - bh - 10 : Math.min(r.bottom + 10, innerHeight - bh - 90);
+  const left = Math.max(8, Math.min(innerWidth - bw - 8, msgEl.classList.contains('mine') ? r.right - bw : r.left));
+  bar.style.top = `${top}px`; bar.style.left = `${left}px`;
+  pickerEl.addEventListener('click', (e) => { const b = e.target.closest('[data-react]'); if (b) react(mid, b.dataset.react); else closePicker(); });
+  try { navigator.vibrate && navigator.vibrate(8); } catch { /* ignore */ }
+}
+// Long-press detection (touch, pen or mouse); right-click also opens it on a computer.
+let lp = null, suppressClick = false;
+document.addEventListener('pointerdown', (e) => {
+  const msg = e.target.closest && e.target.closest('[data-chatlist] .msg'); if (!msg || e.button > 0) return;
+  lp = { x: e.clientX, y: e.clientY, msg, t: setTimeout(() => { lp = null; suppressClick = true; openPicker(msg); setTimeout(() => { suppressClick = false; }, 700); }, 450) };
+});
+const lpCancel = () => { if (lp) { clearTimeout(lp.t); lp = null; } };
+document.addEventListener('pointermove', (e) => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lpCancel(); });
+['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, lpCancel));
+window.addEventListener('scroll', lpCancel, { passive: true });
+document.addEventListener('click', (e) => { if (suppressClick && e.target.closest && e.target.closest('[data-chatlist] .msg')) { e.preventDefault(); e.stopPropagation(); suppressClick = false; } }, true);
+document.addEventListener('contextmenu', (e) => { const msg = e.target.closest && e.target.closest('[data-chatlist] .msg'); if (msg) { e.preventDefault(); if (!pickerEl) openPicker(msg); } });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePicker(); });
 function paintCount(v) {
   const c = document.querySelector('[data-count]'); if (!c) return;
   const n = cpLen(String(v ?? '')); c.textContent = `${n} / ${CHAT_MAX}`;
@@ -2653,7 +2747,7 @@ async function loadOlder() {
   const h0 = document.documentElement.scrollHeight, y0 = window.scrollY;
   try {
     const r = await chatCall('chat_history', { p_before: chat.msgs[0].id, p_limit: 50 }); if (!r) return;
-    addMsgs(r.messages); chat.hasMore = r.has_more; render();
+    addMsgs(r.messages); chat.hasMore = r.has_more; render(); loadReactions();
     window.scrollTo(0, y0 + (document.documentElement.scrollHeight - h0));   // keep the reader's place
   } catch (e) { toast(e.message, 'err'); }
 }
