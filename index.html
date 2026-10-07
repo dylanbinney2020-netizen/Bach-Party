@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Quyle's app, single-file build 2026-10-07T17:44:51Z. Upload this one file; never upload config.js. -->
+<!-- Quyle's app, single-file build 2026-10-07T18:37:20Z. Upload this one file; never upload config.js. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1C15">
@@ -766,6 +766,22 @@ body.tv-mode { overflow: hidden; }
   .scoreboard .sb-name { font-size: clamp(30px, 10vw, 92px); }
 }
 
+/* ===================== Chat photos & GIFs ===================== */
+.chat-composer { grid-template-columns: auto minmax(0,1fr) auto; grid-template-areas: "photo in send" "photo count send"; }
+.chat-composer.has-photo { grid-template-areas: "prev prev prev" "photo in send" "photo count send"; }
+.chat-photo { grid-area: photo; width: 48px; height: 48px; border-radius: 24px; display: grid; place-items: center; background: rgba(239,230,209,.08); border: 1px solid var(--line-2); color: var(--cream); }
+.chat-photo svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.chat-photo:active { background: rgba(200,165,91,.25); }
+.chat-preview { grid-area: prev; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; padding: 6px 8px; border-radius: var(--r-s); background: rgba(31,66,51,.9); border: 1px solid rgba(200,165,91,.4); }
+.chat-preview img { width: 52px; height: 52px; object-fit: cover; border-radius: 4px; flex: none; }
+.chat-preview span { flex: 1; min-width: 0; font: 600 13px/1.25 var(--body); color: var(--text); }
+body.in-chat main { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-inset-bottom, 0px)); }
+.msg-media { display: block; padding: 0; margin: 2px 0 4px; border-radius: 8px; overflow: hidden; max-width: 100%; background: rgba(0,0,0,.2); }
+.msg-media img { display: block; width: min(260px, 64vw); max-width: 100%; height: auto; max-height: 340px; object-fit: cover; }
+.photo-ov { position: fixed; inset: 0; z-index: 120; display: grid; place-items: center; background: rgba(4,10,7,.94); padding: calc(16px + env(safe-area-inset-top, 0px)) 12px calc(16px + env(safe-area-inset-bottom, 0px)); }
+.photo-ov img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+.photo-close { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); right: 14px; width: 40px; height: 40px; border-radius: 20px; background: rgba(239,230,209,.12); color: var(--cream); font-size: 18px; }
+
 </style>
 </head>
 <body>
@@ -1133,7 +1149,7 @@ let stopLive = null;
 let stopChat = null;
 // Chat Room state. Messages load only when Chat is opened; the badge uses a tiny status call.
 const chat = { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false,
-  available: true, sending: false, pendingId: null, newBelow: 0, error: '' };
+  available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null };
 
 const ui = {
   tab: 'home', expanded: {}, golfView: 'board', golfTeam: 1, entryHole: null, entryVal: null,
@@ -1268,7 +1284,7 @@ async function signOut(expired = false) {
   try {
     stopLive && stopLive(); stopLive = null;
     stopChat && stopChat(); stopChat = null;
-    Object.assign(chat, { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false, available: true, sending: false, pendingId: null, newBelow: 0, error: '' });
+    Object.assign(chat, { msgs: [], ids: new Set(), synced: 0, loaded: false, loading: false, hasMore: false, unread: 0, readOnly: false, available: true, sending: false, pendingId: null, newBelow: 0, error: '', photo: null, photoId: null });
     exitTv();
     refetchQueued = false;
     await api.logout(!expired);                 // an expired login has nothing to end on the server
@@ -2254,6 +2270,9 @@ const A = {
     () => run('scratch_set', { p_first: null, p_second: null }, 'Scratch-offs cleared')),
   replay: () => showReveal(),
   'chat-send': () => sendChat(),
+  'chat-photo': () => { const i = photoInput(); i.value = ''; i.click(); },
+  'chat-photo-clear': () => { clearPhoto(); render(); },
+  'chat-view': (el) => viewPhoto(el.dataset.src),
   'chat-older': () => loadOlder(),
   'chat-jump': () => { chat.newBelow = 0; paintJump(); window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }); markReadSoon(); },
   'sb-tv': () => enterTv(),
@@ -2495,7 +2514,8 @@ function msgHtml(m, prev) {
   const t = U.team(S, m.team_id); const mine = me() && m.member_id === me().id;
   const day = !prev || DAY(prev.created_at) !== DAY(m.created_at) ? `<div class="chat-day"><span>${DAY(m.created_at)}</span></div>` : '';
   return `${day}<div class="msg ${mine ? 'mine' : ''}" data-mid="${m.id}" ${tstyle(t)}><div class="msg-who"><b>${esc(m.sender_name)}</b> · ${esc(t ? t.name : '')}</div>
-    <div class="msg-body">${esc(m.body)}</div><div class="msg-time">${TIME(m.created_at)}</div></div>`;
+    ${m.media_path ? `<button class="msg-media" data-act="chat-view" data-src="${esc(mediaUrl(m.media_path))}" aria-label="Open photo from ${esc(m.sender_name)}"><img src="${esc(mediaUrl(m.media_path))}" alt="Photo from ${esc(m.sender_name)}" loading="lazy" ${m.media_w && m.media_h ? `style="aspect-ratio:${m.media_w} / ${m.media_h}"` : ''}></button>` : ''}
+    ${m.body ? `<div class="msg-body">${esc(m.body)}</div>` : ''}<div class="msg-time">${TIME(m.created_at)}</div></div>`;
 }
 function messagesHtml() { return chat.msgs.map((m, i) => msgHtml(m, chat.msgs[i - 1])).join(''); }
 function appendMessages() {
@@ -2524,7 +2544,10 @@ function viewChat() {
   <div class="chat-list" data-chatlist>${body}</div>
   <button class="chat-jump ${chat.newBelow ? '' : 'hidden'}" data-act="chat-jump" data-jump>${chat.newBelow} new messages ↓</button>
   ${ro ? '<div class="chat-composer ro"><span>The weekend is final. This chat is now part of the permanent 2026 archive.</span></div>'
-    : `<form class="chat-composer" data-act-form="chat-send" onsubmit="return false"><input class="chat-input" data-k="chat.msg" placeholder="Message the group" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" aria-label="Message" value="${esc(ui.f['chat.msg'] ?? '')}">
+    : `<form class="chat-composer ${chat.photo ? 'has-photo' : ''}" data-act-form="chat-send" onsubmit="return false">
+      ${chat.photo ? `<div class="chat-preview"><img src="${chat.photo.preview}" alt="Selected photo"><span>${chat.photo.type === 'image/gif' ? 'GIF' : 'Photo'} ready • add a caption or just send</span><button type="button" class="btn xs" data-act="chat-photo-clear" aria-label="Remove photo">✕</button></div>` : ''}
+      <button type="button" class="chat-photo" data-act="chat-photo" aria-label="Add a photo or GIF"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5.5-5.5L7 19"/></svg></button>
+      <input class="chat-input" data-k="chat.msg" placeholder="${chat.photo ? 'Add a caption (optional)' : 'Message the group'}" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" aria-label="Message" value="${esc(ui.f['chat.msg'] ?? '')}">
       <span class="chat-count ${len >= 400 ? '' : 'hidden'} ${len > CHAT_MAX ? 'over' : ''}" data-count>${len} / ${CHAT_MAX}</span>
       <button type="button" class="btn primary chat-send" data-act="chat-send" ${chat.sending ? 'disabled' : ''}>Send</button></form>`}`;
 }
@@ -2533,6 +2556,7 @@ async function sendChat() {
   const input = document.querySelector('.chat-input');
   const raw = String((input && input.value) ?? ui.f['chat.msg'] ?? '');
   const text = raw.trim();
+  if (chat.photo) return sendPhoto(text, input);
   if (!text) return toast('Type a message first', 'err');
   if (cpLen(text) > CHAT_MAX) return toast(`Messages can be up to ${CHAT_MAX} characters`, 'err');
   chat.sending = true; const btn = document.querySelector('.chat-send'); if (btn) btn.disabled = true;
@@ -2549,6 +2573,75 @@ async function sendChat() {
     }
   } catch (e) { toast(e.message || 'Message not sent. Tap Send to try again.', 'err'); }
   finally { chat.sending = false; const b2 = document.querySelector('.chat-send'); if (b2) b2.disabled = false; if (input) input.focus(); }
+}
+// ---- photos & GIFs ----
+const MEDIA_MAX = 6 * 1024 * 1024;                    // matches the storage limit
+const mediaUrl = (path) => `${(window.APP_CONFIG || {}).SUPABASE_URL}/storage/v1/object/public/chat-media/${String(path).split('/').map(encodeURIComponent).join('/')}`;
+const loadImg = (url) => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error('That file could not be opened as a photo.')); i.src = url; });
+// Photos shrink to 1600px on the long side (fast to send, sharp on a phone). GIFs stay as-is to keep the animation.
+async function preparePhoto(file) {
+  if (!file || !/^image\//.test(file.type || '') && !/\.(jpe?g|png|gif|webp|heic|heif)$/i.test(file.name || '')) throw new Error('Choose a photo or GIF.');
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await loadImg(url);
+    if (file.type === 'image/gif') {
+      if (file.size > MEDIA_MAX) throw new Error('That GIF is over 6 MB. Pick a smaller one.');
+      return { blob: file, type: 'image/gif', w: img.naturalWidth, h: img.naturalHeight, preview: url };
+    }
+    const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
+    const blob = await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.82));
+    if (!blob) throw new Error('That photo could not be prepared. Try another.');
+    if (blob.size > MEDIA_MAX) throw new Error('That photo is too large to send.');
+    URL.revokeObjectURL(url);
+    return { blob, type: 'image/jpeg', w, h, preview: URL.createObjectURL(blob) };
+  } catch (e) { URL.revokeObjectURL(url); throw e; }
+}
+async function pickPhoto(file) {
+  try { const ph = await preparePhoto(file); if (chat.photo) URL.revokeObjectURL(chat.photo.preview); chat.photo = ph; chat.photoId = null; chat.pendingId = null; render(); window.scrollTo(0, document.documentElement.scrollHeight); }
+  catch (e) { toast(e.message, 'err'); }
+}
+// One file picker that lives outside the app screen, so a live redraw can never lose a chosen photo.
+let _photoInput = null;
+function photoInput() {
+  if (_photoInput) return _photoInput;
+  _photoInput = document.createElement('input'); _photoInput.type = 'file'; _photoInput.accept = 'image/*'; _photoInput.className = 'hidden'; _photoInput.setAttribute('data-photo-input', '');
+  _photoInput.addEventListener('change', () => { const f = _photoInput.files && _photoInput.files[0]; if (f) pickPhoto(f); });
+  document.body.appendChild(_photoInput); return _photoInput;
+}
+function clearPhoto() { if (chat.photo) URL.revokeObjectURL(chat.photo.preview); chat.photo = null; chat.photoId = null; }
+async function sendPhoto(caption, input) {
+  if (cpLen(caption) > CHAT_MAX) return toast(`Captions can be up to ${CHAT_MAX} characters`, 'err');
+  chat.sending = true; const btn = document.querySelector('.chat-send'); if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  try {
+    const ph = chat.photo;
+    if (!ph.ticket) { const t = await chatCall('chat_upload_ticket', {}); if (!t) return; ph.ticket = t.ticket; }
+    if (!ph.uploaded) {
+      const cfg = window.APP_CONFIG || {}; const name = `${ph.ticket}/${newClientId()}.${ph.type === 'image/gif' ? 'gif' : 'jpg'}`;
+      const r = await fetch(`${cfg.SUPABASE_URL}/storage/v1/object/chat-media/${name}`, { method: 'POST', body: ph.blob,
+        headers: { apikey: cfg.SUPABASE_ANON_KEY, Authorization: `Bearer ${cfg.SUPABASE_ANON_KEY}`, 'Content-Type': ph.type, 'x-upsert': 'false' } });
+      if (!r.ok) { ph.ticket = null; throw new Error(r.status === 413 ? 'That file is too large to send.' : 'The photo did not upload. Tap Send to try again.'); }
+      ph.uploaded = true;
+    }
+    chat.photoId = chat.photoId || newClientId();         // a retry reuses the same id, so it can never post twice
+    const m = await chatCall('chat_send_media', { p_ticket: ph.ticket, p_w: ph.w, p_h: ph.h, p_caption: caption, p_client_id: chat.photoId });
+    if (m) {
+      clearPhoto(); ui.f['chat.msg'] = ''; if (input) input.value = '';
+      if (!chat.loaded) await openChat(false);
+      addMsgs([m]); render(); window.scrollTo(0, document.documentElement.scrollHeight);
+      await chatCatchUp(true); markReadSoon();
+    }
+  } catch (e) { toast(/Could not find the function|PGRST202/i.test(e.message || '') ? "Photos aren't set up yet. Text messages still work." : (e.message || 'Photo not sent. Tap Send to try again.'), 'err'); }
+  finally { chat.sending = false; const b2 = document.querySelector('.chat-send'); if (b2) { b2.disabled = false; b2.textContent = 'Send'; } }
+}
+function viewPhoto(src) {
+  const ov = document.createElement('div'); ov.className = 'photo-ov'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-label', 'Photo');
+  ov.innerHTML = `<img src="${esc(src)}" alt=""><button class="photo-close" aria-label="Close">✕</button>`;
+  const close = () => ov.remove(); ov.addEventListener('click', close);
+  document.addEventListener('keydown', function k(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', k); } });
+  document.body.appendChild(ov);
 }
 function paintCount(v) {
   const c = document.querySelector('[data-count]'); if (!c) return;
