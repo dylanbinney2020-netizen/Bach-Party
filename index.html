@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Quyle's app, single-file build 2026-10-07T18:37:20Z. Upload this one file; never upload config.js. -->
+<!-- Quyle's app, single-file build 2026-10-07T19:02:03Z. Upload this one file; never upload config.js. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1C15">
@@ -2575,7 +2575,7 @@ async function sendChat() {
   finally { chat.sending = false; const b2 = document.querySelector('.chat-send'); if (b2) b2.disabled = false; if (input) input.focus(); }
 }
 // ---- photos & GIFs ----
-const MEDIA_MAX = 6 * 1024 * 1024;                    // matches the storage limit
+const MEDIA_MAX = 20 * 1024 * 1024;                   // matches the storage limit (20 MB)
 const mediaUrl = (path) => `${(window.APP_CONFIG || {}).SUPABASE_URL}/storage/v1/object/public/chat-media/${String(path).split('/').map(encodeURIComponent).join('/')}`;
 const loadImg = (url) => new Promise((ok, bad) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => bad(new Error('That file could not be opened as a photo.')); i.src = url; });
 // Photos shrink to 1600px on the long side (fast to send, sharp on a phone). GIFs stay as-is to keep the animation.
@@ -2585,7 +2585,7 @@ async function preparePhoto(file) {
   try {
     const img = await loadImg(url);
     if (file.type === 'image/gif') {
-      if (file.size > MEDIA_MAX) throw new Error('That GIF is over 6 MB. Pick a smaller one.');
+      if (file.size > MEDIA_MAX) throw new Error('That GIF is over 20 MB. Pick a smaller one.');
       return { blob: file, type: 'image/gif', w: img.naturalWidth, h: img.naturalHeight, preview: url };
     }
     const scale = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
