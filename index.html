@@ -876,6 +876,66 @@ body.in-chat main { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-in
 .rd-net b { color: var(--cream); font-size: 15px; }
 .rd-calc em { display: block; margin-top: 4px; font: 800 14px/1 var(--display); font-style: normal; letter-spacing: .12em; color: var(--gold-d); }
 
+/* ===================== Roulette Dealer: iPad touch table ===================== */
+.rd-head.compact { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-top: 6px; padding: 8px 14px; } .rd-head.compact b { font-size: 20px; } .rd-head.compact span { margin-top: 0; font-size: 10px; }
+.rt { --rh: clamp(46px, 8.6vh, 78px); display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 8px 12px 0; }
+@media (min-width: 900px) { .rt { grid-template-columns: 292px minmax(0, 1fr); align-items: start; } }
+.rt-side, .rt-main { min-width: 0; }
+.rt-side .sub-h { margin-top: 0; }
+.rt-players { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: column; gap: 6px; }
+.rt-p { display: flex; align-items: center; gap: 6px; min-height: 54px; padding: 0 6px 0 8px; font-size: 14px; border-radius: var(--r-s); border: 1px solid var(--line-2); background: rgba(10,24,18,.6); box-shadow: inset 3px 0 0 var(--tc); color: var(--text); font: 700 14px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; text-align: left; touch-action: manipulation; }
+.rt-p span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-p b { flex: none; min-width: 20px; text-align: right; font: 800 16px/1 var(--display); color: var(--gold-l); }
+.rt-p.on { background: var(--cream); color: var(--ink); border-color: var(--cream); } .rt-p.on b { color: var(--ink); }
+.rt-p:disabled { opacity: .6; }
+.rt-pd { flex: none; display: inline-block; width: 24px; height: 24px; border-radius: 50%; border: 2px dashed rgba(255,255,255,.8); box-shadow: 0 0 0 2px rgba(0,0,0,.4); }
+.rt-tot { margin-top: 10px; padding: 10px 12px; border-radius: var(--r-s); background: var(--panel); border: 1px solid var(--line); font: 700 12px/1.3 var(--display); letter-spacing: .12em; color: var(--muted); text-transform: uppercase; }
+.rt-tot b { font: 800 24px/1 var(--display); color: var(--cream); margin-right: 4px; } .rt-tot span { display: block; margin-top: 2px; color: var(--gold-l); }
+.rt-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.rt-bar .btn { min-height: 52px; padding: 0 14px; }
+.rt-now { display: flex; align-items: center; gap: 8px; flex: 1 1 170px; min-width: 150px; padding: 0 12px; min-height: 52px; border-radius: var(--r-s); background: var(--panel); border: 1px solid var(--line-2); }
+.rt-now b { font: 800 20px/1 var(--display); text-transform: uppercase; color: var(--cream); } .rt-now small { margin-left: auto; font: 700 10px/1.1 var(--display); letter-spacing: .14em; color: var(--gold-l); text-align: right; }
+.rt.removing .rt-now { border-color: var(--loss); } .rt.removing .rt-now small { color: #F3A196; }
+.rt-msg { margin: 8px 0; min-height: 18px; font: 600 14px/1.3 var(--body); color: var(--gold-l); }
+.rt-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.rt-felt { min-width: 720px; display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)) 1.15fr; padding: 10px; border: 3px solid rgba(200,165,91,.6); border-radius: 12px; background: radial-gradient(120% 140% at 50% 0%, #1D6B44, #11402A); box-shadow: inset 0 0 40px rgba(0,0,0,.35); }
+.rt.removing .rt-felt { border-color: var(--loss); box-shadow: inset 0 0 40px rgba(0,0,0,.35), 0 0 0 3px rgba(227,107,93,.45); }
+.rt.locked .rt-felt { opacity: .55; pointer-events: none; }
+.rt-nums { position: relative; grid-column: 1 / 14; display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: repeat(6, calc(var(--rh) / 2)); cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.rt-cell { display: flex; align-items: flex-start; justify-content: center; padding-top: 6px; box-shadow: inset 0 0 0 1px rgba(239,230,209,.55); font: 800 clamp(16px, 2.4vh, 22px)/1 var(--display); color: #fff; pointer-events: none; }
+.rt-cell.red { background: #A3262A; } .rt-cell.black { background: #1B1F1D; } .rt-cell.green { background: #1F7A47; }
+.rt-cell.z { padding-top: 8px; font-size: clamp(20px, 3vh, 28px); }
+.rt-t { position: absolute; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; border: 2px solid rgba(239,230,209,.8); background: rgba(10,24,18,.4); pointer-events: none; z-index: 1; }
+.rt-t.co { width: 15px; height: 15px; margin: -7.5px 0 0 -7.5px; border-color: var(--gold-l); background: rgba(200,165,91,.3); }
+.rt-t.gr { width: 11px; height: 11px; margin: -5.5px 0 0 -5.5px; border-color: #9FE3BD; background: rgba(159,227,189,.28); }
+.rt-t.st { width: 17px; height: 17px; margin: -8.5px 0 0 -8.5px; border-color: var(--gold-l); border-radius: 4px; background: rgba(200,165,91,.25); }
+.rt-t.ln { width: 13px; height: 13px; margin: -6.5px 0 0 -6.5px; border-color: #9FE3BD; background: rgba(159,227,189,.28); }
+.rt-gz { position: absolute; left: calc(.73 / 13 * 100%); width: calc(.54 / 13 * 100%); top: 0; bottom: 0; border: 2px dashed rgba(159,227,189,.75); border-radius: 8px; background: rgba(159,227,189,.12); pointer-events: none; z-index: 1; }
+.rt-gz.mid { left: 0; width: calc(.73 / 13 * 100%); top: calc(1.3 / 3 * 100%); bottom: auto; height: calc(.4 / 3 * 100%); }
+.rt-at { position: absolute; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; }
+.rt-stack { display: inline-flex; align-items: center; pointer-events: none; }
+.rt-stack i { display: grid; place-items: center; width: 28px; height: 28px; margin-left: -13px; border-radius: 50%; border: 2px dashed rgba(255,255,255,.85); box-shadow: 0 2px 4px rgba(0,0,0,.65); font: 800 12px/1 var(--display); font-style: normal; }
+.rt-stack i:first-child { margin-left: 0; } .rt-stack i.me { outline: 2px solid var(--gold-l); outline-offset: 1px; } .rt-stack i.more { background: #111; color: #fff; }
+.rt-cols { grid-column: 14; display: grid; grid-template-rows: repeat(3, var(--rh)); }
+.rt-streets { grid-column: 2 / 14; position: relative; min-height: 38px; height: calc(var(--rh) * .52); cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+.rt-streets em { position: absolute; left: 0; right: 0; bottom: 1px; text-align: center; font: 700 9px/1 var(--display); font-style: normal; letter-spacing: .22em; color: rgba(239,230,209,.5); pointer-events: none; }
+.rt-streets .rt-t { top: 40%; }
+.rt-doz { grid-column: 2 / 14; display: grid; grid-template-columns: repeat(3, 1fr); }
+.rt-even { grid-column: 2 / 14; display: grid; grid-template-columns: repeat(6, 1fr); }
+.rt-o { position: relative; display: flex; align-items: center; justify-content: center; min-height: 50px; padding: 0 4px; border: 0; border-radius: 0; background: transparent; box-shadow: inset 0 0 0 1px rgba(239,230,209,.55); color: #fff; font: 800 clamp(14px, 2.1vh, 20px)/1 var(--display); letter-spacing: .06em; text-transform: uppercase; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.rt-o.red { background: #A3262A; } .rt-o.black { background: #1B1F1D; }
+.rt-o.col { min-height: 0; white-space: nowrap; font-size: clamp(12px, 1.9vh, 17px); }
+.rt-o .rt-stack { position: absolute; right: 5px; bottom: 4px; }
+.rt-o:disabled { color: #fff; }
+.rt-gbtns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 12px 0 4px; }
+.rt-gb { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 76px; padding: 6px 4px 22px; border-radius: var(--r-s); border: 1px solid #2c9a5f; background: #1F7A47; color: #fff; touch-action: manipulation; }
+.rt-gb b { font: 800 22px/1 var(--display); } .rt-gb small { font: 700 10px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; opacity: .85; }
+.rt-gb .rt-stack { position: absolute; bottom: 5px; }
+.rt-help { margin-top: 8px; }
+@media (max-width: 460px) { .seg.rd-seg button { letter-spacing: .03em; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } }
+@media (max-width: 899px) { .rt-players { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 900px) and (max-height: 790px) { .rt { --rh: 54px; } .rt-o { min-height: 44px; } .rt-bar .btn, .rt-now { min-height: 48px; } .rt-p { min-height: 50px; } .rt-msg { margin: 6px 0; } }
+
 </style>
 </head>
 <body>
@@ -1352,7 +1412,41 @@ function chipPlan(P) {
     dollars: { pay: P.winnings, keep: P.winStakes, collect: P.lostStakes, net: P.net } };
 }
 
-return { RED, ALL, colorOf, describe, OUTSIDE, INSIDE, TYPES, oddsOf, combosOf, makeBet, betWins, betLabel, payout, settle, CHIP, isWholeChips, toChips, chipPlan };
+// ---------- touch-table geometry (horizontal American layout) ----------
+// Columns c = 0..11 (left to right), rows r = 0..2 (top to bottom). The top row holds 3, 6 .. 36,
+// the middle row 2, 5 .. 35, the bottom row 1, 4 .. 34. 00 sits top-left, 0 bottom-left.
+// Positions are in cell units: u runs -1 (left edge of the zero column) .. 12, v runs 0 .. 3.
+// Every touch point maps to exactly ONE target, so one tap can never register two bets.
+const TX = 0.27;                                  // width of a split/corner zone beside a cell edge, as a share of one cell
+const numAt = (c, r) => String(3 * c + (3 - r));
+const clampTo = (x, max) => Math.min(Math.max(Number(x) || 0, 0), max - 1e-9);
+function gridTarget(u, v) {
+  u = clampTo(u, 12); v = clampTo(v, 3);
+  const c = Math.floor(u), r = Math.floor(v), fu = u - c, fv = v - r;
+  let bc = fu < TX ? c : fu > 1 - TX ? c + 1 : null; if (bc === 0 || bc === 12) bc = null;   // no splits off the ends
+  let br = fv < TX ? r : fv > 1 - TX ? r + 1 : null; if (br === 0 || br === 3) br = null;
+  if (bc == null && br == null) return { type: 'straight', nums: [numAt(c, r)] };
+  if (br == null) return { type: 'split', nums: [numAt(bc - 1, r), numAt(bc, r)] };
+  if (bc == null) return { type: 'split', nums: [numAt(c, br - 1), numAt(c, br)] };
+  return { type: 'corner', nums: [numAt(bc - 1, br - 1), numAt(bc, br - 1), numAt(bc - 1, br), numAt(bc, br)] };
+}
+// The felt including the zero column. The seam beside 0/00 is too crowded for fingers, so it opens a panel instead.
+function touchTarget(u, v) {
+  u = Math.min(Math.max(Number(u) || 0, -1), 12 - 1e-9); v = clampTo(v, 3);
+  if (Math.abs(u) < TX) return { green: true };
+  if (u < 0) return Math.abs(v - 1.5) < 0.2 ? { green: true } : { type: 'straight', nums: [v < 1.5 ? '00' : '0'] };
+  return gridTarget(u, v);
+}
+// Strip under the numbers: streets (3 numbers in a column) and six lines (two neighbouring columns).
+const streetNums = (k) => [3 * k + 1, 3 * k + 2, 3 * k + 3].map(String);
+function streetTarget(u) {
+  u = clampTo(u, 12); const c = Math.floor(u), fu = u - c;
+  if (fu < 0.2 && c > 0) return { type: 'line', nums: [...streetNums(c - 1), ...streetNums(c)] };
+  if (fu > 0.8 && c < 11) return { type: 'line', nums: [...streetNums(c), ...streetNums(c + 1)] };
+  return { type: 'street', nums: streetNums(c) };
+}
+
+return { RED, ALL, colorOf, describe, OUTSIDE, INSIDE, TYPES, oddsOf, combosOf, makeBet, betWins, betLabel, payout, settle, CHIP, isWholeChips, toChips, chipPlan, TX, numAt, gridTarget, touchTarget, streetTarget };
 })();
 
 const { api, startLiveUpdates, startChatSignal } = __mod_api;
@@ -1639,7 +1733,7 @@ function render() {
   if (!S) return;
   const view = { home: viewHome, golf: viewGolf, football: viewFootball, standings: viewStandings, chat: viewChat, more: viewMore }[ui.tab]();
   const keepFromBottom = ui.tab === 'chat' ? document.documentElement.scrollHeight - window.scrollY : null;
-  $app.innerHTML = `${topbar()}<main class="${ui.tab === 'more' && ui.more === 'bank' ? 'wide' : ''}">${view}</main>${nav()}${modal()}`;
+  $app.innerHTML = `${topbar()}<main class="${ui.tab === 'more' && (ui.more === 'bank' || (ui.more === 'roulette' && rd.view === 'table')) ? 'wide' : ''}">${view}</main>${nav()}${modal()}`;
   // restore in-progress form values
   document.querySelectorAll('[data-k]').forEach((el) => {
     const k = el.dataset.k;
@@ -2330,7 +2424,9 @@ function cTesting() {
 function modal() {
   const m = ui.modal; if (!m) return '';
   let body = '';
-  if (m.type === 'rd-edit') {
+  if (m.type === 'rt-green') {
+    body = rdGreenBody();
+  } else if (m.type === 'rd-edit') {
     const b = rd.bets.find((x) => x.id === m.id);
     body = `<h3>Change bet</h3><div class="sheet-kicker">${esc(rdName(b.player))} • ${esc(RL.betLabel(b))}</div>
       <div class="field" style="margin-top:12px"><label>Chip amount</label><input inputmode="decimal" data-k="rd.edit" value="${esc(ui.f['rd.edit'] ?? b.amount)}"></div>
@@ -2513,7 +2609,7 @@ const A = {
   'chat-photo': () => { const i = photoInput(); i.value = ''; i.click(); },
   'chat-photo-clear': () => { clearPhoto(); render(); },
   'chat-view': (el) => viewPhoto(el.dataset.src),
-  'rd-view': (el) => { rd.view = el.dataset.v; rdSave(); render(); window.scrollTo(0, 0); },
+  'rd-view': (el) => { rd.view = el.dataset.v; if (rd.view === 'table' || rd.view === 'bets') rd.entry = rd.view; rd.remove = false; rdSave(); render(); window.scrollTo(0, 0); },
   'rd-player': (el) => { rd.player = +el.dataset.m; rdSave(); render(); },
   'rd-type': (el) => { rd.type = el.dataset.t; rd.picks = []; rdSave(); render(); },
   'rd-pick': (el) => { const x = el.dataset.n; const need = RL.INSIDE[rd.type].count;
@@ -2541,7 +2637,18 @@ const A = {
       rd.settled = { ...RL.settle(rd.bets, x, rdName), at: new Date().toISOString() }; rdSave(); render(); window.scrollTo(0, 0); }); },
   'rd-undo': () => confirmThen({ title: 'Undo settlement', body: `Undo the spin on ${rd.settled.winning}? The bets go back on the table, unsettled.`, ok: 'Undo', danger: true }, () => { rd.settled = null; rdSave(); render(); }),
   'rd-new': () => { const r = rd.settled; rd.history.unshift({ winning: r.winning, paid: r.totals.paid, collected: r.totals.collected, at: r.at }); rd.history = rd.history.slice(0, 25);
-    rd.last = rd.bets.map(({ id, ...b }) => b); rd.bets = []; rd.settled = null; rd.view = 'bets'; rdSave(); render(); window.scrollTo(0, 0); },
+    rd.last = rd.bets.map(({ id, ...b }) => b); rd.bets = []; rd.settled = null; rd.undo = []; rd.remove = false; rd.view = rd.entry || 'bets'; rdSave(); render(); window.scrollTo(0, 0); },
+  'rt-nums': (el, ev) => { const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
+    const t = RL.touchTarget((ev.clientX - r.left) / r.width * 13 - 1, (ev.clientY - r.top) / r.height * 3);
+    if (t.green) { ui.modal = { type: 'rt-green' }; return render(); } rdTapBet(t.type, t.nums); },
+  'rt-street': (el, ev) => { const r = el.getBoundingClientRect(); if (!r.width) return; const t = RL.streetTarget((ev.clientX - r.left) / r.width * 12); rdTapBet(t.type, t.nums); },
+  'rt-out': (el) => rdTapBet(el.dataset.t, []),
+  'rt-green-bet': (el) => rdTapBet(el.dataset.t, el.dataset.n.split('-')),
+  'rt-green-open': () => { ui.modal = { type: 'rt-green' }; render(); },
+  'rt-remove': () => { rd.remove = !rd.remove; rd.lastMsg = rd.remove ? 'Remove mode: each tap takes one chip off for the selected player.' : 'Back to adding chips.'; render(); },
+  'rt-undo': () => { if (rd.settled) return toast('This spin is settled. Undo the settlement first.', 'err'); const top = rd.undo[rd.undo.length - 1]; if (!top) return;
+    if (top.after !== rdSig()) { rd.undo = []; rdSave(); render(); return toast('Bets were changed on the Bets tab, so Undo history was cleared. Use Remove chip or the Bets tab.', 'err'); }
+    rd.undo.pop(); rd.bets = top.bets; rd.nextId = Math.max(rd.nextId, top.nextId); rd.lastMsg = 'Undid the last chip.'; rdSave(); render(); },
   'rd-ctype': (el) => { rd.calcType = el.dataset.t; rdSave(); render(); },
   'rd-camt': (el) => { rd.calcAmt = +el.dataset.a; ui.f['rd.camt'] = ''; rdSave(); render(); },
   'react-who': (el) => { ui.modal = { type: 'reacts', id: +el.dataset.mid }; render(); },
@@ -3075,8 +3182,9 @@ document.addEventListener('visibilitychange', async () => { if (tv.on && !docume
 // Casino Bank, balances, buy-ins or scoring. Bets live on this phone only.
 const RD_KEY = 'qk26.roulette.v1';
 const rd = (() => { try { return JSON.parse(localStorage.getItem(RD_KEY)) || null; } catch { return null; } })() || { bets: [], settled: null, last: [], history: [], nextId: 1 };
+rd.undo = Array.isArray(rd.undo) ? rd.undo : []; rd.remove = false; rd.entry = rd.entry || 'bets'; rd.lastMsg = '';
 rd.view = rd.view || 'bets'; rd.player = rd.player || null; rd.type = rd.type || 'straight'; rd.picks = []; rd.amt = rd.amt && RL.isWholeChips(rd.amt) ? rd.amt : 5; rd.calcType = rd.calcType || 'straight'; rd.calcAmt = rd.calcAmt || 10;
-const rdSave = () => { try { localStorage.setItem(RD_KEY, JSON.stringify({ bets: rd.bets, settled: rd.settled, last: rd.last, history: rd.history, nextId: rd.nextId, view: rd.view, player: rd.player, type: rd.type, amt: rd.amt, calcType: rd.calcType, calcAmt: rd.calcAmt })); } catch { /* private mode */ } };
+const rdSave = () => { try { localStorage.setItem(RD_KEY, JSON.stringify({ undo: rd.undo.slice(-30), entry: rd.entry, bets: rd.bets, settled: rd.settled, last: rd.last, history: rd.history, nextId: rd.nextId, view: rd.view, player: rd.player, type: rd.type, amt: rd.amt, calcType: rd.calcType, calcAmt: rd.calcAmt })); } catch { /* private mode */ } };
 const rd$ = (v) => `$${Number.isInteger(Number(v)) ? Number(v).toLocaleString('en-US') : Number(v).toFixed(2)}`;
 const rdName = (id) => (U.member(S, id) || {}).name || '?';
 const RD_INSIDE = [['straight', 'Straight', 35], ['split', 'Split', 17], ['street', 'Street', 11], ['corner', 'Corner', 8], ['line', 'Double St.', 5], ['trio', 'Trio 0/00', 11], ['topline', 'Top Line', 6]];
@@ -3093,11 +3201,12 @@ function rdAmounts(cur, act, k) {
     <input class="rd-amt" inputmode="decimal" data-k="${k}" placeholder="Other $" value="${esc(ui.f[k] ?? '')}"></div>`;
 }
 function roulettePage() {
-  const views = [['bets', `Bets${rd.bets.length ? ` (${rd.bets.length})` : ''}`], ['settle', rd.settled ? `Spin ${rd.settled.winning}` : 'Settle spin'], ['calc', 'Calculator']];
+  if (!rd.seen) { rd.seen = true; if (window.innerWidth >= 900) rd.view = 'table'; }
+  const views = [['table', 'Table'], ['bets', `Bets${rd.bets.length ? ` (${rd.bets.length})` : ''}`], ['settle', rd.settled ? `Spin ${rd.settled.winning}` : 'Settle spin'], ['calc', 'Calculator']];
   return `<div class="page-pad" style="padding-top:12px"><button class="btn sm" data-act="more" data-v="commish">‹ Commissioner</button></div>
-  <section class="rd-head felt-panel"><b>Roulette Dealer</b><span>Payout helper only • never changes the Casino Bank or scores</span></section>
-  <div class="seg" role="group">${views.map(([k, l]) => `<button data-act="rd-view" data-v="${k}" aria-pressed="${rd.view === k}">${l}</button>`).join('')}</div>
-  ${rd.view === 'bets' ? rdBetsView() : rd.view === 'settle' ? rdSettleView() : rdCalcView()}`;
+  <section class="rd-head felt-panel ${rd.view === 'table' ? 'compact' : ''}"><b>Roulette Dealer</b><span>Payout helper only • never changes the Casino Bank or scores</span></section>
+  <div class="seg rd-seg" role="group">${views.map(([k, l]) => `<button data-act="rd-view" data-v="${k}" aria-pressed="${rd.view === k}">${l}</button>`).join('')}</div>
+  ${rd.view === 'table' ? rdTableView() : rd.view === 'bets' ? rdBetsView() : rd.view === 'settle' ? rdSettleView() : rdCalcView()}`;
 }
 function rdBetsView() {
   const locked = !!rd.settled;
@@ -3134,7 +3243,7 @@ function rdSettleView() {
       <div class="rd-card-head"><b>${esc(P.name)}</b><span>NET ${P.net > 0 ? '+' : P.net < 0 ? '−' : ''}${rd$(Math.abs(P.net))}</span></div>
       ${(() => { const c = RL.chipPlan(P); return `<div class="rd-chipplan">
         <div class="cp pay ${c.pay ? 'go' : ''}"><small>PAY</small><b>${rdChips(c.pay)}</b><span>${rd$(c.dollars.pay)}</span></div>
-        <div class="cp keep ${c.keep ? 'go' : ''}"><small>KEEP / RETURN</small><b>${rdChips(c.keep)}</b><span>${rd$(c.dollars.keep)} winning bet${c.keep === 1 ? '' : 's'}</span></div>
+        <div class="cp keep ${c.keep ? 'go' : ''}"><small>RETURN</small><b>${rdChips(c.keep)}</b><span>${rd$(c.dollars.keep)} winning bet${c.keep === 1 ? '' : 's'}</span></div>
         <div class="cp collect ${c.collect ? 'go' : ''}"><small>COLLECT</small><b>${rdChips(c.collect)}</b><span>${rd$(c.dollars.collect)}</span></div></div>
         <div class="rd-net">NET RESULT: <b>${rdSigned(c.net, c.dollars.net)}</b></div>
         ${c.exact ? '' : '<div class="note warn" style="margin:6px 0 0">Some of these bets are not whole $5 chips, so chip counts are shown exactly, not rounded.</div>'}`; })()}
@@ -3162,6 +3271,107 @@ function rdCalcView() {
 }
 const rdChips = (c) => { const n = Number(c); const t = Number.isInteger(n) ? String(Math.abs(n)) : String(Math.round(Math.abs(n) * 100) / 100); return `${t} CHIP${Math.abs(n) === 1 ? '' : 'S'}`; };
 const rdSigned = (c, d) => `${c > 0 ? '+' : c < 0 ? '−' : ''}${rdChips(c).toLowerCase()} (${d > 0 ? '+' : d < 0 ? '−' : ''}${rd$(Math.abs(d))})`;
+
+// ---- iPad touch table: one tap = one $5 chip on the same bet list the Bets and Settle tabs use ----
+const RD_COLORS = [['#4EA8DE', '#06263A'], ['#F4A261', '#3A1E06'], ['#90BE6D', '#16300A'], ['#F15BB5', '#3D0626'], ['#FEE440', '#3A3300'], ['#9B5DE5', '#FFFFFF'],
+  ['#00C2A8', '#002E28'], ['#E63946', '#FFFFFF'], ['#3A56D4', '#FFFFFF'], ['#8B5A2B', '#FFFFFF'], ['#FFFFFF', '#14241B'], ['#2B2D42', '#FFFFFF']];
+const rdColor = (id) => { const ids = S.members.map((m) => m.id).sort((a, b) => a - b); const i = ids.indexOf(id); return RD_COLORS[(i < 0 ? 0 : i) % RD_COLORS.length]; };
+const rdChipCount = (b) => { const c = b.amount / RL.CHIP; return Number.isInteger(c) ? c : Math.round(c * 100) / 100; };
+const rdIsGreenBet = (b) => b.type !== 'straight' && b.nums.some((x) => x === '0' || x === '00');
+const rdBetKey = (b) => `${b.type}:${b.nums.join('-')}`;
+const rdSig = () => JSON.stringify(rd.bets.map((b) => [b.id, b.player, b.type, b.nums.join('-'), b.amount]));
+function rdStack(list) {
+  if (!list.length) return '';
+  return `<span class="rt-stack">${list.slice(0, 3).map((b) => { const [bg, fg] = rdColor(b.player); return `<i class="${b.player === rd.player ? 'me' : ''}" style="background:${bg};color:${fg}">${rdChipCount(b)}</i>`; }).join('')}${list.length > 3 ? `<i class="more">+${list.length - 3}</i>` : ''}</span>`;
+}
+const rdCenter = (x) => { if (x === '0') return [-0.5, 2.25]; if (x === '00') return [-0.5, 0.75]; const n = Number(x); return [Math.floor((n - 1) / 3) + 0.5, 2 - ((n - 1) % 3) + 0.5]; };
+function rdAnchor(b) {
+  if (b.type === 'street' || b.type === 'line') { const cs = [...new Set(b.nums.map((x) => Math.floor((Number(x) - 1) / 3)))]; return { z: 's', u: cs.reduce((a, c) => a + c + 0.5, 0) / cs.length }; }
+  const pts = b.nums.map(rdCenter); const u = pts.reduce((a, p) => a + p[0], 0) / pts.length, v = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  return { z: 'n', u, v: b.type === 'straight' ? v + 0.14 : v };
+}
+// One tap on the felt: add one $5 chip for the selected player (or take one back in Remove mode). Undo-able.
+function rdTapBet(type, nums) {
+  if (rd.settled) return toast('This spin is settled. Tap New Spin on the Settle tab, or Undo settlement.', 'err');
+  if (!rd.player) return toast('Pick a player first', 'err');
+  let bet; try { bet = RL.makeBet({ type, nums, amount: RL.CHIP }); } catch (e) { return toast(e.message, 'err'); }
+  const name = rdName(rd.player), label = RL.betLabel(bet);
+  const ex = rd.bets.find((b) => b.player === rd.player && rdBetKey(b) === rdBetKey(bet));
+  const before = { bets: JSON.parse(JSON.stringify(rd.bets)), nextId: rd.nextId };
+  if (rd.remove) {
+    if (!ex) return toast(`${name} has no chips on ${label}`, 'err');
+    if (ex.amount - RL.CHIP > 1e-9) ex.amount = Math.round((ex.amount - RL.CHIP) * 100) / 100; else rd.bets = rd.bets.filter((b) => b !== ex);
+    rd.lastMsg = `${name}: took 1 chip off ${label}`;
+  } else {
+    if (ex) ex.amount = Math.round((ex.amount + RL.CHIP) * 100) / 100; else rd.bets.push({ id: rd.nextId++, player: rd.player, ...bet });
+    rd.lastMsg = `${name}: +1 chip on ${label} (${rdChipCount(rd.bets.find((b) => b.player === rd.player && rdBetKey(b) === rdBetKey(bet)))} there now)`;
+  }
+  rd.undo.push({ ...before, after: rdSig() }); rd.undo = rd.undo.slice(-30);
+  rdSave(); render();
+}
+function rdGreenBody() {
+  const cur = rd.player ? U.member(S, rd.player) : null;
+  const items = [['straight', ['0'], '0', 'Straight'], ['straight', ['00'], '00', 'Straight'], ['split', ['0', '00'], '0 / 00', 'Split'], ['split', ['0', '1'], '0 / 1', 'Split'], ['split', ['0', '2'], '0 / 2', 'Split'],
+    ['split', ['00', '2'], '00 / 2', 'Split'], ['split', ['00', '3'], '00 / 3', 'Split'], ['trio', ['0', '1', '2'], '0 / 1 / 2', 'Trio'], ['trio', ['00', '2', '3'], '00 / 2 / 3', 'Trio'],
+    ['trio', ['0', '00', '2'], '0 / 00 / 2', 'Trio'], ['topline', ['0', '00', '1', '2', '3'], 'Top Line', '0 00 1 2 3']];
+  return `<h3>0 and 00 bets</h3><div class="sheet-kicker">${cur ? esc(cur.name) : 'Pick a player first'}${rd.remove ? ' • REMOVE MODE' : ''}</div>
+    <div class="rt-gbtns">${items.map(([t, n, l, k]) => `<button class="rt-gb" data-act="rt-green-bet" data-t="${t}" data-n="${n.join('-')}"><small>${k} ${RL.oddsOf(t)}:1</small><b>${l}</b>${rdStack(rd.bets.filter((b) => b.type === t && b.nums.join('-') === n.join('-')))}</button>`).join('')}</div>
+    <p class="help">${rd.remove ? 'Remove mode: each tap takes one $5 chip back.' : 'Each tap adds one $5 chip.'} Split 0 / 3 is not a bet on an American table.</p>
+    <button class="btn block" data-act="m-close">Done</button>`;
+}
+function rdTableView() {
+  const locked = !!rd.settled;
+  const members = S.teams.flatMap((t) => S.members.filter((m) => m.team_id === t.id));
+  const cur = rd.player ? U.member(S, rd.player) : null;
+  const chipsOn = (id) => rd.bets.filter((b) => b.player === id).reduce((a, b) => a + b.amount / RL.CHIP, 0);
+  const totalChips = rd.bets.reduce((a, b) => a + b.amount / RL.CHIP, 0);
+  const groups = new Map();
+  for (const b of rd.bets) { if (!RL.INSIDE[b.type] || rdIsGreenBet(b)) continue; const k = rdBetKey(b); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(b); }
+  const greens = rd.bets.filter(rdIsGreenBet);
+  let cells = '';
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 12; c++) { const n = RL.numAt(c, r); cells += `<span class="rt-cell ${RL.colorOf(n)}" style="grid-column:${c + 2};grid-row:${2 * r + 1} / span 2">${n}</span>`; }
+  const P = (u, v, cls) => `<i class="rt-t ${cls}" style="left:${((u + 1) / 13 * 100).toFixed(3)}%;top:${(v / 3 * 100).toFixed(3)}%"></i>`;
+  let dots = '';
+  for (let c = 1; c <= 11; c++) { for (let r = 0; r < 3; r++) dots += P(c, r + 0.5, 'sp'); for (const v of [1, 2]) dots += P(c, v, 'co'); }
+  for (let c = 0; c < 12; c++) for (const v of [1, 2]) dots += P(c + 0.5, v, 'sp');
+  for (const v of [0.5, 1, 1.25, 1.75, 2, 2.5]) dots += P(0, v, 'gr');
+  dots += P(-0.5, 1.5, 'gr') + P(0, 1.5, 'gr');
+  const stacksN = [...groups.values()].filter((l) => rdAnchor(l[0]).z === 'n').map((l) => { const a = rdAnchor(l[0]); return `<span class="rt-at" style="left:${((a.u + 1) / 13 * 100).toFixed(3)}%;top:${(a.v / 3 * 100).toFixed(3)}%">${rdStack(l)}</span>`; }).join('');
+  const gbadge = greens.length ? `<span class="rt-at gb" style="left:${(1 / 13 * 100).toFixed(3)}%;top:50%">${rdStack(greens)}</span>` : '';
+  const SD = (u, cls) => `<i class="rt-t ${cls}" style="left:${(u / 12 * 100).toFixed(3)}%;top:50%"></i>`;
+  let sdots = ''; for (let c = 0; c < 12; c++) sdots += SD(c + 0.5, 'st'); for (let c = 1; c <= 11; c++) sdots += SD(c, 'ln');
+  const stacksS = [...groups.values()].filter((l) => rdAnchor(l[0]).z === 's').map((l) => `<span class="rt-at" style="left:${(rdAnchor(l[0]).u / 12 * 100).toFixed(3)}%;top:50%">${rdStack(l)}</span>`).join('');
+  const out = (t, label, cls = '', aria = '') => `<button class="rt-o ${cls}" data-act="rt-out" data-t="${t}" aria-label="${esc(aria || label)}" ${locked ? 'disabled' : ''}><span>${label}</span>${rdStack(rd.bets.filter((b) => b.type === t))}</button>`;
+  return `${locked ? `<div class="note warn" style="margin:8px 12px 0">This spin is settled on <b>${rd.settled.winning}</b>. Use the Settle tab for <b>New Spin</b> or <b>Undo settlement</b>.</div>` : ''}
+  <div class="rt ${rd.remove ? 'removing' : ''} ${locked ? 'locked' : ''}">
+    <aside class="rt-side"><div class="sub-h">Players</div>
+      <div class="rt-players" style="grid-template-rows:repeat(${Math.ceil(members.length / 2)}, auto)">${members.map((m) => { const [bg, fg] = rdColor(m.id); const n = chipsOn(m.id); const t = U.team(S, m.team_id);
+        return `<button class="rt-p ${rd.player === m.id ? 'on' : ''}" ${tstyle(t)} data-act="rd-player" data-m="${m.id}" ${locked ? 'disabled' : ''}><i class="rt-pd" style="background:${bg};color:${fg}"></i><span>${esc(m.name)}</span><b>${n || ''}</b></button>`; }).join('')}</div>
+      <div class="rt-tot"><b>${Number.isInteger(totalChips) ? totalChips : Math.round(totalChips * 100) / 100}</b> chip${totalChips === 1 ? '' : 's'} on the table <span>${rd$(rd.bets.reduce((a, b) => a + b.amount, 0))}</span></div>
+    </aside>
+    <section class="rt-main">
+      <div class="rt-bar">
+        <div class="rt-now">${cur ? `<i class="rt-pd" style="background:${rdColor(cur.id)[0]};color:${rdColor(cur.id)[1]}"></i><b>${esc(cur.name)}</b>` : '<b>Pick a player</b>'}<small>${rd.remove ? 'REMOVE MODE' : '1 TAP = 1 CHIP ($5)'}</small></div>
+        <button class="btn" data-act="rt-undo" ${locked || !rd.undo.length ? 'disabled' : ''}>↶ Undo</button>
+        <button class="btn ${rd.remove ? 'danger' : ''}" data-act="rt-remove" aria-pressed="${rd.remove}" ${locked ? 'disabled' : ''}>${rd.remove ? 'Removing…' : 'Remove'}</button>
+        <button class="btn" data-act="rt-green-open" ${locked ? 'disabled' : ''}>0 / 00</button>
+        <button class="btn primary" data-act="rd-view" data-v="settle" ${rd.bets.length || locked ? '' : 'disabled'}>Ball landed →</button>
+      </div>
+      <div class="rt-msg" data-rt-msg>${esc(rd.lastMsg || 'Pick a player, then tap the table. Each tap adds one $5 chip.')}</div>
+      <div class="rt-scroll"><div class="rt-felt">
+        <div class="rt-nums" data-act="rt-nums" data-rtnums>
+          <span class="rt-cell green z" style="grid-column:1;grid-row:1 / span 3">00</span><span class="rt-cell green z" style="grid-column:1;grid-row:4 / span 3">0</span>
+          ${cells}<span class="rt-gz" aria-hidden="true"></span><span class="rt-gz mid" aria-hidden="true"></span>${dots}${stacksN}${gbadge}
+        </div>
+        <div class="rt-cols">${out('col3', '2 to 1', 'col', 'Column 3')}${out('col2', '2 to 1', 'col', 'Column 2')}${out('col1', '2 to 1', 'col', 'Column 1')}</div>
+        <div class="rt-streets" data-act="rt-street" data-rtstreet>${sdots}${stacksS}<em>STREETS / SIX LINES</em></div>
+        <div class="rt-doz">${out('dozen1', '1st 12')}${out('dozen2', '2nd 12')}${out('dozen3', '3rd 12')}</div>
+        <div class="rt-even">${out('low', '1–18')}${out('even', 'Even')}${out('red', '◆', 'red', 'Red')}${out('black', '◆', 'black', 'Black')}${out('odd', 'Odd')}${out('high', '19–36')}</div>
+      </div></div>
+      <p class="help rt-help">Tap a number for a straight. Tap a ring between numbers for a split, or where four meet for a corner. The strip under the numbers has streets and six lines. Tap the dashed green area beside 0 and 00 (or the 0 / 00 button) for the green bets.</p>
+    </section>
+  </div>`;
+}
 function rdNum(v) { const x = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; }
 
 // ---------------------------------------------------------------- broadcast moments
