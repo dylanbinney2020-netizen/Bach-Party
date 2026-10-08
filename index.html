@@ -962,6 +962,45 @@ body.rd-console .toast { top: auto; bottom: calc(14px + env(safe-area-inset-bott
   .rt-area { justify-content: flex-start; overflow-x: auto; padding: 8px; -webkit-overflow-scrolling: touch; }
 }
 
+/* ===================== Roulette Dealer: pop-ups over the table ===================== */
+.rdc-bar > button em { margin-left: 5px; font-style: normal; color: var(--gold-l); }
+.scrim.rt-dim { background: rgba(6,14,10,.5); animation: none; align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) calc(env(safe-area-inset-right, 0px) + 10px) calc(env(safe-area-inset-bottom, 0px) + 10px) calc(env(safe-area-inset-left, 0px) + 10px); }
+.scrim.rt-dim .sheet { animation: none; }
+.sheet.rt-sheet { display: flex; flex-direction: column; width: min(980px, 100%); max-width: none; max-height: 100%; padding: 0; overflow: hidden; border: 2px solid var(--gold); border-radius: 12px; }
+.sheet.rt-s-win { width: min(900px, 100%); } .sheet.rt-s-bets, .sheet.rt-s-calc { width: min(720px, 100%); }
+.rt-mh { flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 14px 10px 18px; border-bottom: 1px solid var(--line-2); }
+.rt-mh h3 { margin: 0; }
+.rt-x { flex: none; min-width: 48px; min-height: 48px; border-radius: var(--r-s); border: 1px solid var(--line-2); background: rgba(10,24,18,.75); color: var(--text); font: 800 20px/1 var(--display); touch-action: manipulation; }
+.rt-mb { flex: 1 1 auto; min-height: 0; overflow-y: auto; padding: 12px 16px; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.rt-mf { flex: none; display: flex; gap: 10px; padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px) * 0); border-top: 1px solid var(--line-2); background: rgba(10,24,18,.55); }
+.rt-mf .btn { min-height: 56px; flex: 1 1 0; }
+.rt-note { margin: 0 0 10px; color: var(--gold-l); font: 600 14px/1.3 var(--body); }
+.rt-wgrid { display: grid; grid-template-columns: repeat(13, minmax(0, 1fr)); grid-template-rows: repeat(6, 34px); gap: 4px; }
+.rt-wn { min-width: 0; min-height: 44px; padding: 0; border-radius: 6px; border: 2px solid rgba(239,230,209,.45); color: #fff; font: 800 clamp(20px, 2.8vw, 30px)/1 var(--display); touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.rt-wn.red { background: #A3262A; } .rt-wn.black { background: #1B1F1D; } .rt-wn.green { background: #1F7A47; }
+.rt-wn.z00 { grid-column: 1; grid-row: 1 / span 3; } .rt-wn.z0 { grid-column: 1; grid-row: 4 / span 3; }
+.rt-rh { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 10px; margin-bottom: 10px; }
+.rt-rh .rd-totals { margin-top: 0; } .rt-rh .rd-result b { font-size: 48px; }
+.rt-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; }
+.rt-pc .rd-chipplan { margin: 8px 0; gap: 8px; } .rt-pc .rd-chipplan .cp { padding: 10px 6px; }
+.rt-pc .rd-chipplan small { font-size: 13px; letter-spacing: .18em; }
+.rt-pc .rd-chipplan b { font-size: 24px; white-space: nowrap; }
+.rt-pc .rd-chipplan span { font-size: 12px; }
+.rt-pc .rd-card-head b { font-size: 24px; } .rt-net { font: 700 13px/1 var(--display) !important; letter-spacing: .06em; color: var(--muted) !important; }
+.rt-pc .rd-line { padding: 4px 0; font-size: 13px; }
+.rt-det { margin-top: 6px; border-top: 1px solid var(--line); }
+.rt-det summary { display: flex; align-items: center; min-height: 40px; color: var(--muted); font: 700 12px/1 var(--display); letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+.rt-det .rd-say { margin: 4px 0 8px; font-size: 15px; }
+.rt-mf .rt-new { flex: 1.6 1 0; min-height: 64px; font-size: 24px; letter-spacing: .12em; }
+@media (max-width: 760px) {
+  .rt-cards, .rt-rh { grid-template-columns: minmax(0, 1fr); }
+  .rt-wgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-template-rows: 52px repeat(12, 44px); }
+  .rt-wn { grid-column: auto !important; grid-row: auto !important; }
+  .rt-wn:not(.z00):not(.z0) { grid-column: calc((2 - var(--r)) * 2 + 1) / span 2 !important; grid-row: calc(var(--c) + 2) !important; }
+  .rt-wn.z0 { grid-column: 1 / span 3 !important; grid-row: 1 !important; } .rt-wn.z00 { grid-column: 4 / span 3 !important; grid-row: 1 !important; }
+}
+
 </style>
 </head>
 <body>
@@ -2455,7 +2494,15 @@ function cTesting() {
 function modal() {
   const m = ui.modal; if (!m) return '';
   let body = '';
-  if (m.type === 'rt-green') {
+  if (m.type === 'rt-win') {
+    body = rdWinBody();
+  } else if (m.type === 'rt-result') {
+    body = rdResultBody();
+  } else if (m.type === 'rt-bets') {
+    body = rdBetsModalBody();
+  } else if (m.type === 'rt-calc') {
+    body = rdCalcModalBody();
+  } else if (m.type === 'rt-green') {
     body = rdGreenBody();
   } else if (m.type === 'rt-menu') {
     body = rdMenuBody();
@@ -2465,7 +2512,7 @@ function modal() {
     const b = rd.bets.find((x) => x.id === m.id);
     body = `<h3>Change bet</h3><div class="sheet-kicker">${esc(rdName(b.player))} • ${esc(RL.betLabel(b))}</div>
       <div class="field" style="margin-top:12px"><label>Chip amount</label><input inputmode="decimal" data-k="rd.edit" value="${esc(ui.f['rd.edit'] ?? b.amount)}"></div>
-      <div class="btn-row"><button class="btn" data-act="m-close">Cancel</button><button class="btn primary" data-act="rd-save-edit">Save</button></div>`;
+      <div class="btn-row"><button class="btn" data-act="rd-view" data-v="bets">Cancel</button><button class="btn primary" data-act="rd-save-edit">Save</button></div>`;
   } else if (m.type === 'reacts') {
     const r = chat.reacts.get(m.id) || new Map();
     body = `<h3>Reactions</h3>${REACTS.map(([k, e, l]) => { const who = [...r.entries()].filter(([, kind]) => kind === k).map(([mid]) => U.member(S, mid)).filter(Boolean);
@@ -2526,7 +2573,8 @@ function modal() {
       <div class="field"><label>Frozen spread override (optional)</label><input inputmode="decimal" data-k="rp.spread" placeholder="Blank = current slate line"></div>
       <div class="btn-row"><button class="btn" data-act="m-close">Cancel</button><button class="btn primary" data-act="m-replace">Replace pick</button></div>`;
   }
-  return `<div class="scrim" data-act="m-scrim"><div class="sheet" role="dialog" aria-modal="true">${body}</div></div>`;
+  const rtm = typeof m.type === 'string' && m.type.startsWith('rt-'); const rtBig = ['rt-win', 'rt-result', 'rt-bets', 'rt-calc'].includes(m.type);
+  return `<div class="scrim ${rtm ? 'rt-dim' : ''}" data-act="m-scrim"><div class="sheet ${rtBig ? `rt-sheet rt-s-${m.type.slice(3)}` : ''}" role="dialog" aria-modal="true">${body}</div></div>`;
 }
 
 // ---------------------------------------------------------------- actions
@@ -2644,7 +2692,19 @@ const A = {
   'chat-photo': () => { const i = photoInput(); i.value = ''; i.click(); },
   'chat-photo-clear': () => { clearPhoto(); render(); },
   'chat-view': (el) => viewPhoto(el.dataset.src),
-  'rd-view': (el) => { rd.view = el.dataset.v; if (rd.view === 'table' || rd.view === 'bets') rd.entry = rd.view; rd.remove = false; rdSave(); render(); window.scrollTo(0, 0); },
+  // The old tab buttons now open pop-ups over the table. (Existing buttons that still say "rd-view" keep working.)
+  'rd-view': (el) => { const v = el.dataset.v; rd.remove = false;
+    if (v === 'settle') return A['rt-settle-open']();
+    ui.modal = v === 'bets' ? { type: 'rt-bets' } : v === 'calc' ? { type: 'rt-calc' } : null; rd.view = 'table'; render(); },
+  'rt-settle-open': () => { if (rd.settled) { rd.resultAt = Date.now(); ui.modal = { type: 'rt-result' }; } else ui.modal = { type: 'rt-win' }; render(); },
+  // Choosing the winning number settles the spin and opens the results. One spin can only be settled once.
+  'rt-win-pick': (el) => { const x = el.dataset.n;
+    if (rd.settled) { rd.resultAt = Date.now(); ui.modal = { type: 'rt-result' }; return render(); }
+    if (!rd.bets.length) return toast(`${x}: ${RL.colorOf(x).toUpperCase()}${RL.describe(x).parity ? ' • ' + RL.describe(x).parity.toUpperCase() : ''}`);
+    rd.settled = { ...RL.settle(rd.bets, x, rdName), at: new Date().toISOString() }; rd.remove = false; rd.resultAt = Date.now(); ui.modal = { type: 'rt-result' }; rdSave(); render(); },
+  // Ignore taps in the first half second so a double tap on the number grid can never hit New Spin underneath it.
+  'rt-new': () => { if (!rd.settled || Date.now() - (rd.resultAt || 0) < 500) return; A['rd-new'](); },
+  'rt-manual': () => { rd.manual = !rd.manual; render(); },
   'rd-player': (el) => { rd.player = +el.dataset.m; rdSave(); render(); },
   'rd-type': (el) => { rd.type = el.dataset.t; rd.picks = []; rdSave(); render(); },
   'rd-pick': (el) => { const x = el.dataset.n; const need = RL.INSIDE[rd.type].count;
@@ -2662,7 +2722,7 @@ const A = {
   'rd-edit': (el) => { ui.modal = { type: 'rd-edit', id: +el.dataset.id }; render(); },
   'rd-save-edit': () => { const b = rd.bets.find((x) => x.id === ui.modal.id); const v = rdNum(val('rd.edit'));
     if (!v) return toast('Enter an amount above $0', 'err');
-    if (!RL.isWholeChips(v)) return toast('Bets must be whole $5 chips ($5, $10, $15…)', 'err'); b.amount = v; rdSave(); ui.modal = null; clearForm('rd.edit'); render(); },
+    if (!RL.isWholeChips(v)) return toast('Bets must be whole $5 chips ($5, $10, $15…)', 'err'); b.amount = v; rdSave(); ui.modal = { type: 'rt-bets' }; clearForm('rd.edit'); render(); },
   'rd-clear': () => confirmThen({ title: 'Clear all bets', body: `Remove all ${rd.bets.length} bets from this spin? This cannot be undone.`, ok: 'Clear bets', danger: true }, () => { rd.bets = []; rd.picks = []; rdSave(); render(); }),
   'rd-repeat': () => { const copy = rd.last.map((b) => ({ ...b, id: rd.nextId++ })); rd.bets.push(...copy); rdSave(); toast(`${copy.length} previous bet${copy.length === 1 ? '' : 's'} added`); render(); },
   'rd-land': (el) => { const x = el.dataset.n;
@@ -2671,8 +2731,8 @@ const A = {
       if (rd.settled) return;                                                   // never settle the same bets twice
       rd.settled = { ...RL.settle(rd.bets, x, rdName), at: new Date().toISOString() }; rdSave(); render(); window.scrollTo(0, 0); }); },
   'rd-undo': () => confirmThen({ title: 'Undo settlement', body: `Undo the spin on ${rd.settled.winning}? The bets go back on the table, unsettled.`, ok: 'Undo', danger: true }, () => { rd.settled = null; rdSave(); render(); }),
-  'rd-new': () => { const r = rd.settled; rd.history.unshift({ winning: r.winning, paid: r.totals.paid, collected: r.totals.collected, at: r.at }); rd.history = rd.history.slice(0, 25);
-    rd.last = rd.bets.map(({ id, ...b }) => b); rd.bets = []; rd.settled = null; rd.undo = []; rd.remove = false; rd.view = rd.entry || 'bets'; rdSave(); render(); window.scrollTo(0, 0); },
+  'rd-new': () => { const r = rd.settled; if (!r) return; rd.history.unshift({ winning: r.winning, paid: r.totals.paid, collected: r.totals.collected, at: r.at }); rd.history = rd.history.slice(0, 25);
+    rd.last = rd.bets.map(({ id, ...b }) => b); rd.bets = []; rd.settled = null; rd.undo = []; rd.remove = false; rd.view = 'table'; ui.modal = null; rdSave(); render(); window.scrollTo(0, 0); },
   'rt-nums': (el, ev) => { const r = el.getBoundingClientRect(); if (!r.width || !r.height) return;
     const t = RL.touchTarget((ev.clientX - r.left) / r.width * 13 - 1, (ev.clientY - r.top) / r.height * 3);
     if (t.green) { ui.modal = { type: 'rt-green' }; return render(); } rdTapBet(t.type, t.nums); },
@@ -2787,7 +2847,7 @@ const A = {
 
   // modal actions
   'm-close': () => { ui.modal = null; pendingConfirm = null; render(); },
-  'm-scrim': (el, ev) => { if (ev.target === el) A['m-close'](); },
+  'm-scrim': (el, ev) => { if (ev.target === el && !(ui.modal && ui.modal.type === 'rt-result')) A['m-close'](); },
   'm-ok': async () => { const fn = pendingConfirm; ui.modal = null; pendingConfirm = null; render(); if (fn) await fn(); },
   'm-savegame': async () => {
     const m = ui.modal; const g = m.id ? U.game(S, m.id) : null;
@@ -3240,23 +3300,23 @@ function rdAmounts(cur, act, k) {
     <input class="rd-amt" inputmode="decimal" data-k="${k}" placeholder="Other $" value="${esc(ui.f[k] ?? '')}"></div>`;
 }
 function roulettePage() {
-  if (!rd.seen) { rd.seen = true; if (window.innerWidth >= 900) rd.view = 'table'; }
-  return `<div class="rdc ${rd.view === 'table' ? 'is-table' : ''}">${rdHeader()}${rd.view === 'table' ? rdTableView() : rd.view === 'bets' ? rdBetsView() : rd.view === 'settle' ? rdSettleView() : rdCalcView()}</div>`;
+  rd.view = 'table';
+  return `<div class="rdc is-table">${rdHeader()}${rdTableView()}</div>`;
 }
-// One compact toolbar: Back | Table Bets Calc | selected player | Undo Remove 0/00 | Settle Spin | menu
+// One compact toolbar: Back | Bets Calc | selected player | Undo Remove 0/00 | Settle Spin | menu
 function rdHeader() {
-  const locked = !!rd.settled, tbl = rd.view === 'table';
+  const locked = !!rd.settled;
   const cur = rd.player ? U.member(S, rd.player) : null;
-  const tab = (k, l) => `<button data-act="rd-view" data-v="${k}" aria-pressed="${rd.view === k}">${l}${k === 'bets' && rd.bets.length ? `<em>${rd.bets.length}</em>` : ''}</button>`;
   const fresh = rd.lastMsg && Date.now() - rd.lastAt < 2000;
   return `<header class="rdc-bar">
     <button class="rdc-back" data-act="more" data-v="commish" aria-label="Back to Commissioner">‹ <span>Back</span></button>
-    <div class="rdc-tabs" role="group" aria-label="Dealer views">${tab('table', 'Table')}${tab('bets', 'Bets')}${tab('calc', 'Calc')}</div>
-    ${tbl ? `<div class="rdc-now">${cur ? `<i class="rt-pd" style="background:${rdColor(cur.id)[0]};color:${rdColor(cur.id)[1]}"></i><b>${esc(cur.name)}</b>` : '<b class="none">Pick a player</b>'}${fresh ? `<span class="rt-flash">${esc(rd.lastMsg)}</span>` : ''}</div>
-      <button data-act="rt-undo" ${locked || !rd.undo.length ? 'disabled' : ''}>↶ Undo</button>
-      <button class="rdc-rm" data-act="rt-remove" aria-pressed="${rd.remove}" ${locked ? 'disabled' : ''}>${rd.remove ? 'Removing' : 'Remove'}</button>
-      <button class="rdc-g" data-act="rt-green-open" ${locked ? 'disabled' : ''}>0 / 00</button>` : '<div class="rdc-sp"></div>'}
-    <button class="rdc-go ${rd.view === 'settle' ? 'on' : ''}" data-act="rd-view" data-v="settle">${locked ? `Spin ${rd.settled.winning}` : 'Settle Spin'}</button>
+    <button data-act="rd-view" data-v="bets">Bets${rd.bets.length ? `<em>${rd.bets.length}</em>` : ''}</button>
+    <button data-act="rd-view" data-v="calc">Calc</button>
+    <div class="rdc-now">${cur ? `<i class="rt-pd" style="background:${rdColor(cur.id)[0]};color:${rdColor(cur.id)[1]}"></i><b>${esc(cur.name)}</b>` : '<b class="none">Pick a player</b>'}${fresh ? `<span class="rt-flash">${esc(rd.lastMsg)}</span>` : ''}</div>
+    <button data-act="rt-undo" ${locked || !rd.undo.length ? 'disabled' : ''}>↶ Undo</button>
+    <button class="rdc-rm" data-act="rt-remove" aria-pressed="${rd.remove}" ${locked ? 'disabled' : ''}>${rd.remove ? 'Removing' : 'Remove'}</button>
+    <button class="rdc-g" data-act="rt-green-open" ${locked ? 'disabled' : ''}>0 / 00</button>
+    <button class="rdc-go ${locked ? 'on' : ''}" data-act="rt-settle-open">${locked ? `Spin ${rd.settled.winning}` : 'Settle Spin'}</button>
     <button class="rdc-more" data-act="rt-menu-open" aria-label="More dealer actions">⋯</button>
   </header>`;
 }
@@ -3457,6 +3517,48 @@ function rdTableView() {
       ${locked ? `<div class="rt-lock"><div><b>Spin settled on ${rd.settled.winning}</b><button class="btn" data-act="rd-view" data-v="settle">View result</button><button class="btn primary" data-act="rd-new">New Spin</button></div></div>` : ''}
     </section>`;
 }
+
+// ---- pop-ups: everything happens over the main table, which never goes away ----
+const rtShell = (title, body, foot = '') => `<div class="rt-mh"><h3>${title}</h3><button class="rt-x" data-act="m-close" aria-label="Close">✕</button></div><div class="rt-mb">${body}</div>${foot ? `<div class="rt-mf">${foot}</div>` : ''}`;
+// Winning number: a compact betting-layout grid (not a wheel). Tapping a number here only settles the spin; it never adds a chip.
+function rdWinBody() {
+  let cells = '';
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 12; c++) { const n = RL.numAt(c, r); cells += `<button class="rt-wn ${RL.colorOf(n)}" data-act="rt-win-pick" data-n="${n}" style="grid-column:${c + 2};grid-row:${2 * r + 1} / span 2;--c:${c};--r:${r}">${n}</button>`; }
+  const grid = `<div class="rt-wgrid"><button class="rt-wn green z00" data-act="rt-win-pick" data-n="00">00</button><button class="rt-wn green z0" data-act="rt-win-pick" data-n="0">0</button>${cells}</div>`;
+  return rtShell('Where did the ball land?', `${rd.bets.length ? '' : '<p class="rt-note">No bets on the table. Tapping a number only shows its facts.</p>'}${grid}`, '<button class="btn" data-act="m-close">Cancel</button>');
+}
+// Settlement results: COLLECT, PAY, LEAVE first; net and the sentence are secondary.
+function rdResultBody() {
+  const r = rd.settled;
+  if (!r) return rtShell('Spin result', '<p class="rt-note">There is no settled spin.</p>', '<button class="btn" data-act="m-close">Close</button>');
+  const i = r.info; const facts = i.color === 'green' ? ['GREEN', 'no outside bets win'] : [i.color.toUpperCase(), i.parity.toUpperCase(), i.range === 'low' ? '1–18' : '19–36', ['1st', '2nd', '3rd'][i.dozen - 1] + ' 12', `COLUMN ${i.column}`];
+  const head = `<div class="rt-rh"><div class="rd-result ${i.color}"><b>${r.winning}</b><span>${facts.join(' • ')}</span></div>
+    ${r.players.length ? `<div class="rd-totals"><div><small>YOU PAY OUT</small><b>${rd$(r.totals.paid)}</b><em>${rdChips(RL.toChips(r.totals.paid))}</em></div><div><small>YOU COLLECT</small><b>${rd$(r.totals.collected)}</b><em>${rdChips(RL.toChips(r.totals.collected))}</em></div></div>` : ''}</div>`;
+  const cards = r.players.map((P) => { const c = RL.chipPlan(P);
+    return `<div class="panel rd-card rt-pc ${P.net > 0 ? 'up' : P.net < 0 ? 'down' : ''}">
+      <div class="rd-card-head"><b>${esc(P.name)}</b><span class="rt-net">NET ${P.net > 0 ? '+' : P.net < 0 ? '−' : ''}${rd$(Math.abs(P.net))}</span></div>
+      <div class="rd-chipplan">
+        <div class="cp collect ${c.collect ? 'go' : ''}"><small>COLLECT</small><b>${rdChips(c.collect)}</b><span>${rd$(c.dollars.collect)} losing bets</span></div>
+        <div class="cp pay ${c.pay ? 'go' : ''}"><small>PAY</small><b>${rdChips(c.pay)}</b><span>${rd$(c.dollars.pay)} winnings</span></div>
+        <div class="cp keep ${c.keep ? 'go' : ''}"><small>LEAVE</small><b>${rdChips(c.keep)}</b><span>${rd$(c.dollars.keep)} winning bet${c.keep === 1 ? '' : 's'}</span></div></div>
+      ${c.exact ? '' : '<div class="note warn" style="margin:6px 0 0">Some of these bets are not whole $5 chips, so chip counts are shown exactly, not rounded.</div>'}
+      ${P.wins.map((w) => `<div class="rd-line win"><span>✓ ${esc(w.label)} • ${rd$(w.amount)} at ${w.odds}:1</span><b>+${rd$(w.pay)}</b></div>`).join('')}
+      ${P.losses.map((l) => `<div class="rd-line loss"><span>✕ ${esc(l.label)}</span><b>−${rd$(l.amount)}</b></div>`).join('')}
+      <details class="rt-det"><summary>Instruction and totals</summary><div class="rd-say">${esc(P.instruction)}</div>
+        <div class="rd-net">NET RESULT: <b>${rdSigned(c.net, c.dollars.net)}</b></div>
+        <div class="rd-sum"><span>Winnings (profit) <b>${rd$(P.winnings)}</b></span><span>Losing stakes <b>${rd$(P.lostStakes)}</b></span><span>Back to player incl. winning stakes <b>${rd$(P.totalReturn)}</b></span></div></details></div>`; }).join('');
+  return rtShell('Spin result', `${head}${cards ? `<div class="rt-cards">${cards}</div>` : '<div class="note">No bets were on the table for this spin.</div>'}`,
+    '<button class="btn danger" data-act="rd-undo">Undo settlement</button><button class="btn primary rt-new" data-act="rt-new">NEW SPIN</button>');
+}
+// Bets: the existing list (review, edit, remove) first; the old manual entry form is one tap away.
+function rdBetsModalBody() {
+  const html = rdBetsView(); const k = html.indexOf('<section class="section"><div class="sec-head">');
+  const form = k > 0 ? html.slice(0, k) : ''; const list = k > 0 ? html.slice(k) : html; const locked = !!rd.settled;
+  const note = locked ? `<div class="note warn" style="margin:0 0 10px">This spin is settled on <b>${rd.settled.winning}</b>. Bets are locked. Open the results to press New Spin, or use Undo settlement to change them.</div>` : '';
+  const manual = locked ? '' : `<button class="btn block" data-act="rt-manual" style="margin-top:10px">${rd.manual ? 'Hide manual bet entry' : 'Add a bet manually'}</button>${rd.manual ? form : ''}`;
+  return rtShell(`Bets${rd.bets.length ? ` (${rd.bets.length})` : ''}`, `${note}${list}${manual}`, '<button class="btn primary" data-act="m-close">Done</button>');
+}
+const rdCalcModalBody = () => rtShell('Quick payout calculator', rdCalcView(), '<button class="btn primary" data-act="m-close">Done</button>');
 function rdNum(v) { const x = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; }
 
 // ---------------------------------------------------------------- broadcast moments
