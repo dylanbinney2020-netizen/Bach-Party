@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Quyle's app, single-file build 2026-10-07T19:26:08Z. Upload this one file; never upload config.js. -->
+<!-- Quyle's app, single-file build 2026-10-08T18:15:11Z. Upload this one file; never upload config.js. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1C15">
@@ -804,6 +804,61 @@ body.in-chat main { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-in
 .react-head span { font: 800 14px/1 var(--display); letter-spacing: .14em; color: var(--gold-l); text-transform: uppercase; }
 .react-head b { margin-left: auto; font: 800 16px/1 var(--display); color: var(--cream); }
 
+/* ===================== Roulette Dealer (commissioner) ===================== */
+.rd-entry { flex-direction: column; gap: 2px; min-height: 56px; }
+.rd-entry small { font: 600 10px/1 var(--display); letter-spacing: .2em; opacity: .7; }
+.rd-head { margin: 12px 12px 0; padding: 14px 16px; border-radius: var(--r-m); }
+.rd-head b { display: block; font: 700 28px/1 var(--serif); color: var(--cream); }
+.rd-head span { display: block; margin-top: 5px; font: 700 11px/1.3 var(--display); letter-spacing: .14em; color: var(--gold-l); text-transform: uppercase; }
+.rd-box { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-m); padding: 4px 12px 14px; }
+.rd-box.locked { opacity: .55; }
+.rd-players { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rd-p { min-height: 44px; padding: 0 4px; border-radius: var(--r-s); border: 1px solid var(--line-2); background: rgba(10,24,18,.6); box-shadow: inset 3px 0 0 var(--tc); font: 700 14px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rd-p.on { background: var(--cream); color: var(--ink); border-color: var(--cream); }
+.rd-types { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rd-types.out { margin-top: 6px; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.rd-t { min-height: 46px; padding: 4px 2px; border-radius: var(--r-s); border: 1px solid var(--line-2); background: rgba(10,24,18,.6); font: 700 13px/1.1 var(--display); letter-spacing: .02em; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.rd-t small { font-size: 10px; color: var(--gold-l); letter-spacing: .08em; }
+.rd-t.on { background: var(--gold); color: var(--forest-dd); border-color: var(--gold); } .rd-t.on small { color: var(--forest-dd); }
+.rd-hint { margin: 10px 0 8px; }
+.rd-board { max-width: 360px; margin: 0 auto; }
+.rd-zero { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 4px; }
+.rd-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.rd-n { min-height: 40px; border-radius: 4px; font: 800 18px/1 var(--display); color: #fff; border: 2px solid transparent; }
+.rd-n.red { background: #A3262A; } .rd-n.black { background: #1B1F1D; } .rd-n.green { background: #1F7A47; }
+.rd-n.on { border-color: var(--gold-l); box-shadow: 0 0 0 2px var(--gold); transform: scale(1.04); }
+.rd-n:disabled { opacity: .6; }
+.rd-n.mini { display: inline-grid; place-items: center; min-width: 34px; min-height: 28px; font-size: 14px; }
+.rd-chips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)) 1.4fr; gap: 6px; align-items: stretch; }
+.rd-chip { min-height: 44px; border-radius: 22px; border: 2px dashed rgba(239,230,209,.4); background: rgba(10,24,18,.6); font: 800 14px/1 var(--display); }
+.rd-chip.on { background: var(--gold); color: var(--forest-dd); border-style: solid; border-color: var(--gold-l); }
+.rd-amt { min-width: 0; min-height: 44px; padding: 0 8px; border-radius: var(--r-s); border: 1px solid var(--line-2); background: rgba(10,24,18,.75); color: var(--text); font: 600 15px/1 var(--body); }
+@media (max-width: 380px) { .rd-chips { grid-template-columns: repeat(3, 1fr); } .rd-amt { grid-column: span 3; } .rd-types.out { grid-template-columns: repeat(4, 1fr); } }
+.rd-pl { padding: 8px 12px; border-top: 1px solid var(--line); } .rd-pl:first-child { border-top: 0; }
+.rd-pl-name { font: 800 14px/1 var(--display); letter-spacing: .1em; color: var(--gold-l); text-transform: uppercase; margin-bottom: 4px; }
+.rd-bet { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; min-height: 40px; }
+.rd-bet span { font: 600 15px/1.2 var(--body); } .rd-bet small { margin-left: 6px; font: 700 11px/1 var(--display); color: var(--muted); }
+.rd-bet-amt { min-height: 34px; padding: 0 10px; border-radius: 17px; background: rgba(239,230,209,.1); border: 1px solid var(--line-2); font: 800 15px/1 var(--display); }
+.rd-result { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: var(--r-m); border: 1px solid var(--line-2); }
+.rd-result.red { background: linear-gradient(90deg, #A3262A, #5E1A1C); } .rd-result.black { background: linear-gradient(90deg, #1B1F1D, #0E1210); } .rd-result.green { background: linear-gradient(90deg, #1F7A47, #134A2C); }
+.rd-result b { font: 800 56px/1 var(--display); color: #fff; } .rd-result span { font: 700 13px/1.4 var(--display); letter-spacing: .12em; color: #fff; }
+.rd-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.rd-totals div { padding: 10px 12px; border-radius: var(--r-s); background: var(--panel); border: 1px solid var(--line); }
+.rd-totals small { display: block; font: 700 10px/1 var(--display); letter-spacing: .18em; color: var(--muted); } .rd-totals b { font: 800 26px/1.1 var(--display); color: var(--cream); }
+.rd-card { padding: 12px 14px; } .rd-card.up { box-shadow: inset 4px 0 0 var(--win); } .rd-card.down { box-shadow: inset 4px 0 0 var(--loss); }
+.rd-card-head { display: flex; justify-content: space-between; align-items: baseline; }
+.rd-card-head b { font: 800 22px/1 var(--display); text-transform: uppercase; } .rd-card-head span { font: 800 16px/1 var(--display); color: var(--gold-l); }
+.rd-say { margin: 10px 0; padding: 10px 12px; border-radius: var(--r-s); background: var(--cream); color: var(--ink); font: 600 16px/1.35 var(--body); }
+.rd-line { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid var(--line); font: 500 14px/1.3 var(--body); }
+.rd-line.win b { color: var(--win); font-family: var(--display); font-size: 16px; } .rd-line.loss b { color: var(--loss); font-family: var(--display); font-size: 16px; }
+.rd-sum { display: grid; gap: 3px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--line-2); font: 500 13px/1.3 var(--body); color: var(--muted); }
+.rd-sum b { color: var(--cream); font-family: var(--display); font-size: 15px; margin-left: 4px; }
+.rd-hist { display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: center; padding: 8px 12px; border-top: 1px solid var(--line); font: 500 13px/1.2 var(--body); }
+.rd-hist:first-child { border-top: 0; } .rd-hist span:last-child { text-align: right; color: var(--muted); }
+.rd-calc { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.rd-calc div { padding: 14px; border-radius: var(--r-m); background: var(--cream); color: var(--ink); text-align: center; }
+.rd-calc small { display: block; font: 700 10px/1.2 var(--display); letter-spacing: .14em; color: var(--ink-2); } .rd-calc b { font: 800 38px/1.1 var(--display); }
+
 </style>
 </head>
 <body>
@@ -1151,9 +1206,129 @@ const flag = (cls = '') => `<svg class="gflag ${cls}" viewBox="0 0 40 60" aria-h
 return { RIDGES, mountains, trophy, chip, card, roulette, beerCan, football, flag };
 })();
 
+const __mod_roulette = (() => {
+// American double-zero roulette rules for the commissioner's Roulette Dealer.
+// Pure functions only: no app state, no database, no money tracking.
+// Numbers are strings: '0', '00', '1'..'36'. 0 and 00 are different numbers.
+
+const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36].map(String));
+const ALL = ['0', '00', ...Array.from({ length: 36 }, (_, i) => String(i + 1))];
+const n = (x) => Number(x);
+const isGreen = (x) => x === '0' || x === '00';
+const colorOf = (x) => (isGreen(x) ? 'green' : RED.has(x) ? 'red' : 'black');
+
+// Facts about a winning number (green numbers belong to no outside category).
+function describe(x) {
+  if (isGreen(x)) return { number: x, color: 'green', parity: null, range: null, dozen: null, column: null };
+  const v = n(x);
+  return { number: x, color: colorOf(x), parity: v % 2 ? 'odd' : 'even', range: v <= 18 ? 'low' : 'high',
+    dozen: Math.ceil(v / 12), column: v % 3 === 1 ? 1 : v % 3 === 2 ? 2 : 3 };
+}
+
+// ---------- bet types ----------
+const OUTSIDE = {
+  red: { label: 'Red', odds: 1, wins: (d) => d.color === 'red' },
+  black: { label: 'Black', odds: 1, wins: (d) => d.color === 'black' },
+  odd: { label: 'Odd', odds: 1, wins: (d) => d.parity === 'odd' },
+  even: { label: 'Even', odds: 1, wins: (d) => d.parity === 'even' },
+  low: { label: '1–18', odds: 1, wins: (d) => d.range === 'low' },
+  high: { label: '19–36', odds: 1, wins: (d) => d.range === 'high' },
+  dozen1: { label: '1st 12 (1–12)', odds: 2, wins: (d) => d.dozen === 1 },
+  dozen2: { label: '2nd 12 (13–24)', odds: 2, wins: (d) => d.dozen === 2 },
+  dozen3: { label: '3rd 12 (25–36)', odds: 2, wins: (d) => d.dozen === 3 },
+  col1: { label: 'Column 1 (1, 4…34)', odds: 2, wins: (d) => d.column === 1 },
+  col2: { label: 'Column 2 (2, 5…35)', odds: 2, wins: (d) => d.column === 2 },
+  col3: { label: 'Column 3 (3, 6…36)', odds: 2, wins: (d) => d.column === 3 },
+};
+const INSIDE = {
+  straight: { label: 'Straight up', count: 1, odds: 35 },
+  split: { label: 'Split', count: 2, odds: 17 },
+  street: { label: 'Street', count: 3, odds: 11 },
+  trio: { label: 'Trio (zero area)', count: 3, odds: 11 },
+  corner: { label: 'Corner', count: 4, odds: 8 },
+  topline: { label: 'Top Line (0-00-1-2-3)', count: 5, odds: 6 },
+  line: { label: 'Double Street', count: 6, odds: 5 },
+};
+const TYPES = { ...INSIDE, ...OUTSIDE };
+const oddsOf = (type) => (TYPES[type] ? TYPES[type].odds : null);
+
+// ---------- every legal inside combination (generated once) ----------
+const key = (nums) => [...nums].sort((a, b) => ALL.indexOf(a) - ALL.indexOf(b)).join('-');
+const COMBOS = { straight: new Set(), split: new Set(), street: new Set(), trio: new Set(), corner: new Set(), topline: new Set(), line: new Set() };
+for (const x of ALL) COMBOS.straight.add(key([x]));
+for (let v = 1; v <= 36; v++) {
+  if (v % 3 !== 0) COMBOS.split.add(key([String(v), String(v + 1)]));          // side by side in a row
+  if (v <= 33) COMBOS.split.add(key([String(v), String(v + 3)]));              // next row
+  if (v % 3 === 1) COMBOS.street.add(key([String(v), String(v + 1), String(v + 2)]));
+  if (v % 3 !== 0 && v <= 32) COMBOS.corner.add(key([String(v), String(v + 1), String(v + 3), String(v + 4)]));
+  if (v % 3 === 1 && v <= 31) COMBOS.line.add(key([v, v + 1, v + 2, v + 3, v + 4, v + 5].map(String)));
+}
+for (const s of [['0', '00'], ['0', '1'], ['0', '2'], ['00', '2'], ['00', '3']]) COMBOS.split.add(key(s));   // zero-area splits
+for (const t of [['0', '1', '2'], ['00', '2', '3'], ['0', '00', '2']]) COMBOS.trio.add(key(t));              // zero-area trios
+COMBOS.topline.add(key(['0', '00', '1', '2', '3']));
+const combosOf = (type) => [...(COMBOS[type] || [])].map((k) => k.split('-'));
+
+// Validate a bet; returns a clean copy or throws a plain-English error.
+function makeBet({ type, nums = [], amount }) {
+  const a = Number(amount);
+  if (!TYPES[type]) throw new Error('Choose a bet type.');
+  if (!Number.isFinite(a) || a <= 0 || Math.round(a * 100) !== a * 100) throw new Error('Enter a chip amount above $0.');
+  if (OUTSIDE[type]) return { type, nums: [], amount: a };
+  const clean = [...new Set(nums.map(String))];
+  if (clean.some((x) => !ALL.includes(x))) throw new Error('Those numbers are not on the table.');
+  if (type === 'topline') return { type, nums: ['0', '00', '1', '2', '3'], amount: a };
+  if (clean.length !== INSIDE[type].count) throw new Error(`${INSIDE[type].label} needs exactly ${INSIDE[type].count} number${INSIDE[type].count > 1 ? 's' : ''}.`);
+  const k = key(clean);
+  if (!COMBOS[type].has(k)) throw new Error(`${k.split('-').join(', ')} is not a valid ${INSIDE[type].label.toLowerCase()}.`);
+  return { type, nums: k.split('-'), amount: a };
+}
+
+function betWins(bet, winning) {
+  if (OUTSIDE[bet.type]) return OUTSIDE[bet.type].wins(describe(winning));   // green numbers lose every outside bet
+  return bet.nums.includes(winning);
+}
+function betLabel(bet) {
+  if (OUTSIDE[bet.type]) return OUTSIDE[bet.type].label;
+  if (bet.type === 'straight') return `Straight ${bet.nums[0]}`;
+  if (bet.type === 'topline') return 'Top Line 0-00-1-2-3';
+  return `${INSIDE[bet.type].label} ${bet.nums.join('-')}`;
+}
+// Quick calculator: profit paid, and total back including the original stake.
+function payout(type, amount) {
+  const o = oddsOf(type); const a = Number(amount);
+  if (o == null || !Number.isFinite(a) || a <= 0) return null;
+  return { odds: o, winnings: a * o, total: a * o + a };
+}
+// Settle one spin: per player winners, losers, totals, net, and plain dealer instructions.
+function settle(bets, winning, nameOf = (p) => String(p)) {
+  if (!ALL.includes(String(winning))) throw new Error('Enter 0, 00 or 1–36.');
+  const w = String(winning); const players = new Map();
+  for (const b of bets) {
+    if (!players.has(b.player)) players.set(b.player, { player: b.player, name: nameOf(b.player), wins: [], losses: [], winnings: 0, winStakes: 0, lostStakes: 0 });
+    const P = players.get(b.player);
+    if (betWins(b, w)) { const pay = b.amount * oddsOf(b.type); P.wins.push({ ...b, label: betLabel(b), odds: oddsOf(b.type), pay }); P.winnings += pay; P.winStakes += b.amount; }
+    else { P.losses.push({ ...b, label: betLabel(b) }); P.lostStakes += b.amount; }
+  }
+  const rows = [...players.values()].map((P) => {
+    P.net = P.winnings - P.lostStakes; P.totalReturn = P.winnings + P.winStakes;
+    const $ = (v) => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
+    const parts = [];
+    if (P.wins.length) parts.push(`Pay ${P.name} ${$(P.winnings)} in winnings. Leave ${P.wins.length === 1 ? 'the original ' + $(P.winStakes) + ' winning chip' : 'the original ' + $(P.winStakes) + ' in winning chips'} in place.`);
+    if (P.losses.length) parts.push(`Collect ${$(P.lostStakes)} in losing bets (${P.losses.map((l) => `${$(l.amount)} ${l.label}`).join(', ')}).`);
+    P.instruction = parts.join(' ');
+    return P;
+  });
+  return { winning: w, info: describe(w), players: rows,
+    totals: { paid: rows.reduce((s, p) => s + p.winnings, 0), collected: rows.reduce((s, p) => s + p.lostStakes, 0) } };
+}
+
+return { RED, ALL, colorOf, describe, OUTSIDE, INSIDE, TYPES, oddsOf, combosOf, makeBet, betWins, betLabel, payout, settle };
+})();
+
 const { api, startLiveUpdates, startChatSignal } = __mod_api;
 const U = __mod_util;
 const ART = __mod_art;
+const RL = __mod_roulette;
 
 const { esc } = U;
 const BRAND = window.BRAND || {};
@@ -1821,6 +1996,7 @@ function viewMore() {
   if (ui.more === 'teams') return sub('Teams', teamsView());
   if (ui.more === 'archive') return sub('Archive', archiveView());
   if (ui.more === 'commish' && isCommish()) return sub('Commissioner', commishView());
+  if (ui.more === 'roulette' && isCommish()) return roulettePage();
   const items = [['blackjack', 'Casino Night', 'Blackjack + Roulette results and the Mug'], ['teams', 'Teams & members', 'Rosters, scorekeepers, drafters'], ['archive', 'Archive', final() ? 'Final results from the weekend' : 'Full record, locks when final']];
   items.unshift(['scoreboard', 'Scoreboard', 'Live weekend standings for the TV']);
   if (isCommish()) items.push(['bank', 'Casino Bank', 'Bank, withdraw, rebuy, cash out'], ['commish', 'Commissioner', 'Control center']);
@@ -1900,7 +2076,8 @@ const teamOpts = (sel, blank = true) => `${blank ? '<option value="">Choose</opt
 
 function commishView() {
   const c = S.competition;
-  return `<section class="section"><div class="panel">
+  return `<section class="section"><button class="btn primary block rd-entry" data-act="more" data-v="roulette">Roulette Dealer <small>payout helper</small></button></section>
+  <section class="section"><div class="panel">
     ${acc('weekend', 'Weekend', cWeekend, `<span class="pill ${c.status === 'final' ? 'final' : c.status === 'live' ? 'live' : ''}">${c.status}</span>`)}
     ${acc('scratch', 'Scratch-offs', cScratch, (S.scratch || []).length ? '<span class="pill final">Set</span>' : '')}
     ${acc('bj', 'Casino Night', cBlackjack, S.blackjack.finalized ? '<span class="pill final">Final</span>' : '')}
@@ -2123,7 +2300,12 @@ function cTesting() {
 function modal() {
   const m = ui.modal; if (!m) return '';
   let body = '';
-  if (m.type === 'reacts') {
+  if (m.type === 'rd-edit') {
+    const b = rd.bets.find((x) => x.id === m.id);
+    body = `<h3>Change bet</h3><div class="sheet-kicker">${esc(rdName(b.player))} • ${esc(RL.betLabel(b))}</div>
+      <div class="field" style="margin-top:12px"><label>Chip amount</label><input inputmode="decimal" data-k="rd.edit" value="${esc(ui.f['rd.edit'] ?? b.amount)}"></div>
+      <div class="btn-row"><button class="btn" data-act="m-close">Cancel</button><button class="btn primary" data-act="rd-save-edit">Save</button></div>`;
+  } else if (m.type === 'reacts') {
     const r = chat.reacts.get(m.id) || new Map();
     body = `<h3>Reactions</h3>${REACTS.map(([k, e, l]) => { const who = [...r.entries()].filter(([, kind]) => kind === k).map(([mid]) => U.member(S, mid)).filter(Boolean);
       return who.length ? `<div class="react-group"><div class="react-head">${e}<span>${l}</span><b>${who.length}</b></div>${who.map((x) => `<div class="kv"><span>${esc(x.name)}</span><span>${esc(U.team(S, x.team_id)?.name || '')}</span></div>`).join('')}</div>` : ''; }).join('') || '<p>No reactions.</p>'}
@@ -2301,6 +2483,35 @@ const A = {
   'chat-photo': () => { const i = photoInput(); i.value = ''; i.click(); },
   'chat-photo-clear': () => { clearPhoto(); render(); },
   'chat-view': (el) => viewPhoto(el.dataset.src),
+  'rd-view': (el) => { rd.view = el.dataset.v; rdSave(); render(); window.scrollTo(0, 0); },
+  'rd-player': (el) => { rd.player = +el.dataset.m; rdSave(); render(); },
+  'rd-type': (el) => { rd.type = el.dataset.t; rd.picks = []; rdSave(); render(); },
+  'rd-pick': (el) => { const x = el.dataset.n; const need = RL.INSIDE[rd.type].count;
+    if (rd.picks.includes(x)) rd.picks = rd.picks.filter((y) => y !== x); else if (rd.type === 'straight') rd.picks = [x]; else if (rd.picks.length < need) rd.picks.push(x); else toast(`${RL.INSIDE[rd.type].label} uses ${need} numbers. Tap one to remove it first.`, 'err');
+    render(); },
+  'rd-amt': (el) => { rd.amt = +el.dataset.a; ui.f['rd.amt'] = ''; rdSave(); render(); },
+  'rd-add': () => {
+    if (!rd.player) return toast('Pick the player first', 'err');
+    const custom = rdNum(val('rd.amt')); const amount = custom || rd.amt;
+    let bet; try { bet = RL.makeBet({ type: rd.type, nums: rd.picks, amount }); } catch (e) { return toast(e.message, 'err'); }
+    rd.bets.push({ id: rd.nextId++, player: rd.player, ...bet }); rd.picks = []; ui.f['rd.amt'] = ''; if (custom) rd.amt = custom; rdSave();
+    toast(`${rdName(rd.player)}: ${RL.betLabel(bet)} ${rd$(bet.amount)} added`); render(); },
+  'rd-del': (el) => { rd.bets = rd.bets.filter((b) => b.id !== +el.dataset.id); rdSave(); render(); },
+  'rd-edit': (el) => { ui.modal = { type: 'rd-edit', id: +el.dataset.id }; render(); },
+  'rd-save-edit': () => { const b = rd.bets.find((x) => x.id === ui.modal.id); const v = rdNum(val('rd.edit'));
+    if (!v) return toast('Enter an amount above $0', 'err'); b.amount = v; rdSave(); ui.modal = null; clearForm('rd.edit'); render(); },
+  'rd-clear': () => confirmThen({ title: 'Clear all bets', body: `Remove all ${rd.bets.length} bets from this spin? This cannot be undone.`, ok: 'Clear bets', danger: true }, () => { rd.bets = []; rd.picks = []; rdSave(); render(); }),
+  'rd-repeat': () => { const copy = rd.last.map((b) => ({ ...b, id: rd.nextId++ })); rd.bets.push(...copy); rdSave(); toast(`${copy.length} previous bet${copy.length === 1 ? '' : 's'} added`); render(); },
+  'rd-land': (el) => { const x = el.dataset.n;
+    if (!rd.bets.length) { rd.settled = null; toast(`${x}: ${RL.colorOf(x).toUpperCase()}${RL.describe(x).parity ? ' • ' + RL.describe(x).parity.toUpperCase() : ''}`); return; }
+    confirmThen({ title: 'Settle this spin', big: `${x} • ${RL.colorOf(x).toUpperCase()}`, body: `Settle all ${rd.bets.length} bets on ${x}? You can undo this.`, ok: 'Settle' }, () => {
+      if (rd.settled) return;                                                   // never settle the same bets twice
+      rd.settled = { ...RL.settle(rd.bets, x, rdName), at: new Date().toISOString() }; rdSave(); render(); window.scrollTo(0, 0); }); },
+  'rd-undo': () => confirmThen({ title: 'Undo settlement', body: `Undo the spin on ${rd.settled.winning}? The bets go back on the table, unsettled.`, ok: 'Undo', danger: true }, () => { rd.settled = null; rdSave(); render(); }),
+  'rd-new': () => { const r = rd.settled; rd.history.unshift({ winning: r.winning, paid: r.totals.paid, collected: r.totals.collected, at: r.at }); rd.history = rd.history.slice(0, 25);
+    rd.last = rd.bets.map(({ id, ...b }) => b); rd.bets = []; rd.settled = null; rd.view = 'bets'; rdSave(); render(); window.scrollTo(0, 0); },
+  'rd-ctype': (el) => { rd.calcType = el.dataset.t; rdSave(); render(); },
+  'rd-camt': (el) => { rd.calcAmt = +el.dataset.a; ui.f['rd.camt'] = ''; rdSave(); render(); },
   'react-who': (el) => { ui.modal = { type: 'reacts', id: +el.dataset.mid }; render(); },
   'chat-older': () => loadOlder(),
   'chat-jump': () => { chat.newBelow = 0; paintJump(); window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' }); markReadSoon(); },
@@ -2438,6 +2649,8 @@ document.addEventListener('input', (ev) => {
   const t = ev.target; const k = t.dataset && t.dataset.k; if (!k) return;
   ui.f[k] = t.type === 'checkbox' ? t.checked : t.value;
   if (k === 'chat.msg') paintCount(t.value);
+  if (k === 'rd.camt') { const v = rdNum(t.value); const pp = v && RL.payout(rd.calcType, v); const a = document.querySelector('[data-calc-pay]'), b = document.querySelector('[data-calc-total]');
+    if (pp && a && b) { rd.calcAmt = v; rdSave(); a.textContent = rd$(pp.winnings); b.textContent = rd$(pp.total); document.querySelectorAll('.rd-chip.on').forEach((c) => c.classList.remove('on')); } }
   if (t.dataset.calc != null) { const o = document.querySelector('[data-calcout]'); if (o) o.innerHTML = calcLine(Number(t.dataset.calc), t.value); }
   if (t.dataset.pair) {            // typing one spread fills the opposite side
     const n = parseSpread(t.value); const other = document.querySelector(`[data-k="${t.dataset.pair}"]`);
@@ -2821,6 +3034,91 @@ function exitTv() {
 }
 document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && tv.on && !tv.leavingOk) exitTv(); });
 document.addEventListener('visibilitychange', async () => { if (tv.on && !document.hidden && navigator.wakeLock) { try { tv.lock = await navigator.wakeLock.request('screen'); } catch { /* ignore */ } } });
+
+// ---------------------------------------------------------------- roulette dealer (commissioner only)
+// A payout calculator only. It never calls the server and never touches the
+// Casino Bank, balances, buy-ins or scoring. Bets live on this phone only.
+const RD_KEY = 'qk26.roulette.v1';
+const rd = (() => { try { return JSON.parse(localStorage.getItem(RD_KEY)) || null; } catch { return null; } })() || { bets: [], settled: null, last: [], history: [], nextId: 1 };
+rd.view = rd.view || 'bets'; rd.player = rd.player || null; rd.type = rd.type || 'straight'; rd.picks = []; rd.amt = rd.amt || 5; rd.calcType = rd.calcType || 'straight'; rd.calcAmt = rd.calcAmt || 10;
+const rdSave = () => { try { localStorage.setItem(RD_KEY, JSON.stringify({ bets: rd.bets, settled: rd.settled, last: rd.last, history: rd.history, nextId: rd.nextId, view: rd.view, player: rd.player, type: rd.type, amt: rd.amt, calcType: rd.calcType, calcAmt: rd.calcAmt })); } catch { /* private mode */ } };
+const rd$ = (v) => `$${Number.isInteger(Number(v)) ? Number(v).toLocaleString('en-US') : Number(v).toFixed(2)}`;
+const rdName = (id) => (U.member(S, id) || {}).name || '?';
+const RD_INSIDE = [['straight', 'Straight', 35], ['split', 'Split', 17], ['street', 'Street', 11], ['corner', 'Corner', 8], ['line', 'Double St.', 5], ['trio', 'Trio 0/00', 11], ['topline', 'Top Line', 6]];
+const RD_OUT = [['red', 'Red'], ['black', 'Black'], ['odd', 'Odd'], ['even', 'Even'], ['low', '1–18'], ['high', '19–36'], ['dozen1', '1st 12'], ['dozen2', '2nd 12'], ['dozen3', '3rd 12'], ['col1', 'Col 1'], ['col2', 'Col 2'], ['col3', 'Col 3']];
+const RD_HINT = { straight: 'Tap one number (0 and 00 included).', split: 'Tap 2 neighboring numbers. Green splits: 0-00, 0-1, 0-2, 00-2, 00-3.', street: 'Tap the 3 numbers of one row.',
+  corner: 'Tap 4 numbers that meet at a corner.', line: 'Tap the 6 numbers of two neighboring rows.', trio: 'Tap 0-1-2, 00-2-3, or 0-00-2.', topline: 'Covers 0, 00, 1, 2, 3. Nothing to tap.' };
+function rdBoard(sel, act, locked) {
+  const cell = (x) => `<button class="rd-n ${RL.colorOf(x)} ${sel.includes(x) ? 'on' : ''}" data-act="${act}" data-n="${x}" ${locked ? 'disabled' : ''}>${x}</button>`;
+  let rows = ''; for (let r = 0; r < 12; r++) rows += [1, 2, 3].map((k) => cell(String(r * 3 + k))).join('');
+  return `<div class="rd-board"><div class="rd-zero">${cell('0')}${cell('00')}</div><div class="rd-grid">${rows}</div></div>`;
+}
+function rdAmounts(cur, act, k) {
+  return `<div class="rd-chips">${[1, 5, 10, 25, 50, 100].map((a) => `<button class="rd-chip ${Number(cur) === a ? 'on' : ''}" data-act="${act}" data-a="${a}">$${a}</button>`).join('')}
+    <input class="rd-amt" inputmode="decimal" data-k="${k}" placeholder="Other $" value="${esc(ui.f[k] ?? '')}"></div>`;
+}
+function roulettePage() {
+  const views = [['bets', `Bets${rd.bets.length ? ` (${rd.bets.length})` : ''}`], ['settle', rd.settled ? `Spin ${rd.settled.winning}` : 'Settle spin'], ['calc', 'Calculator']];
+  return `<div class="page-pad" style="padding-top:12px"><button class="btn sm" data-act="more" data-v="commish">‹ Commissioner</button></div>
+  <section class="rd-head felt-panel"><b>Roulette Dealer</b><span>Payout helper only • never changes the Casino Bank or scores</span></section>
+  <div class="seg" role="group">${views.map(([k, l]) => `<button data-act="rd-view" data-v="${k}" aria-pressed="${rd.view === k}">${l}</button>`).join('')}</div>
+  ${rd.view === 'bets' ? rdBetsView() : rd.view === 'settle' ? rdSettleView() : rdCalcView()}`;
+}
+function rdBetsView() {
+  const locked = !!rd.settled;
+  const inside = !!RL.INSIDE[rd.type];
+  const byPlayer = new Map(); for (const b of rd.bets) { if (!byPlayer.has(b.player)) byPlayer.set(b.player, []); byPlayer.get(b.player).push(b); }
+  return `${locked ? `<div class="note warn">This spin is settled on <b>${rd.settled.winning}</b>. Tap <b>New Spin</b> (Settle tab) to take new bets, or <b>Undo</b> to change these.</div>` : ''}
+  <section class="section rd-box ${locked ? 'locked' : ''}">
+    <div class="sub-h">1. Player</div>
+    <div class="rd-players">${S.teams.map((t) => S.members.filter((m) => m.team_id === t.id).map((m) => `<button class="rd-p ${rd.player === m.id ? 'on' : ''}" ${tstyle(t)} data-act="rd-player" data-m="${m.id}" ${locked ? 'disabled' : ''}>${esc(m.name)}</button>`).join('')).join('')}</div>
+    <div class="sub-h">2. Bet</div>
+    <div class="rd-types">${RD_INSIDE.map(([k, l, o]) => `<button class="rd-t ${rd.type === k ? 'on' : ''}" data-act="rd-type" data-t="${k}" ${locked ? 'disabled' : ''}>${l}<small>${o}:1</small></button>`).join('')}</div>
+    <div class="rd-types out">${RD_OUT.map(([k, l]) => `<button class="rd-t ${rd.type === k ? 'on' : ''}" data-act="rd-type" data-t="${k}" ${locked ? 'disabled' : ''}>${l}<small>${RL.OUTSIDE[k].odds}:1</small></button>`).join('')}</div>
+    ${inside ? `<p class="help rd-hint">${RD_HINT[rd.type]}${rd.picks.length ? ` <b>Picked: ${rd.picks.join(', ')}</b>` : ''}</p>${rd.type === 'topline' ? '' : rdBoard(rd.picks, 'rd-pick', locked)}` : ''}
+    <div class="sub-h">3. Chips</div>${rdAmounts(rd.amt, 'rd-amt', 'rd.amt')}
+    <button class="btn primary block" data-act="rd-add" ${locked ? 'disabled' : ''} style="margin-top:10px">Add bet</button>
+  </section>
+  <section class="section"><div class="sec-head"><h2 class="sec-title">Bets on the table</h2><span class="sec-meta">${rd.bets.length} bet${rd.bets.length === 1 ? '' : 's'} • ${rd$(rd.bets.reduce((a, b) => a + b.amount, 0))}</span></div>
+    <div class="panel">${rd.bets.length ? [...byPlayer.entries()].map(([pid, list]) => `<div class="rd-pl"><div class="rd-pl-name">${esc(rdName(pid))}</div>
+      ${list.map((b) => `<div class="rd-bet"><span>${esc(RL.betLabel(b))}<small>${RL.oddsOf(b.type)}:1</small></span><button class="rd-bet-amt" data-act="rd-edit" data-id="${b.id}" ${locked ? 'disabled' : ''}>${rd$(b.amount)}</button><button class="btn xs" data-act="rd-del" data-id="${b.id}" aria-label="Delete bet" ${locked ? 'disabled' : ''}>✕</button></div>`).join('')}</div>`).join('')
+      : '<div class="empty">No bets yet. Pick a player, a bet and chips, then Add bet.</div>'}</div>
+    <div class="btn-row" style="margin-top:10px"><button class="btn sm" data-act="rd-repeat" ${locked || !rd.last.length ? 'disabled' : ''}>Repeat previous bets</button><button class="btn sm danger" data-act="rd-clear" ${locked || !rd.bets.length ? 'disabled' : ''}>Clear all bets</button></div>
+    ${rd.bets.length && !locked ? '<button class="btn block" style="margin-top:8px" data-act="rd-view" data-v="settle">Ball landed → Settle spin</button>' : ''}
+  </section>`;
+}
+function rdSettleView() {
+  const r = rd.settled;
+  if (!r) return `<section class="section rd-box"><div class="sub-h">Where did the ball land?</div>
+    ${rd.bets.length ? '' : '<p class="help">No bets recorded. Tapping a number still shows its facts.</p>'}
+    <div class="rd-land">${rdBoard([], 'rd-land', false)}</div></section>${rdHistory()}`;
+  const i = r.info; const facts = i.color === 'green' ? ['GREEN', 'no outside bets win'] : [i.color.toUpperCase(), i.parity.toUpperCase(), i.range === 'low' ? '1–18' : '19–36', ['1st', '2nd', '3rd'][i.dozen - 1] + ' 12', `COLUMN ${i.column}`];
+  return `<section class="section"><div class="rd-result ${i.color}"><b>${r.winning}</b><span>${facts.join(' • ')}</span></div>
+    ${r.players.length ? `<div class="rd-totals"><div><small>YOU PAY OUT</small><b>${rd$(r.totals.paid)}</b></div><div><small>YOU COLLECT</small><b>${rd$(r.totals.collected)}</b></div></div>` : ''}</section>
+  ${r.players.map((P) => `<section class="section"><div class="panel rd-card ${P.net > 0 ? 'up' : P.net < 0 ? 'down' : ''}">
+      <div class="rd-card-head"><b>${esc(P.name)}</b><span>NET ${P.net > 0 ? '+' : P.net < 0 ? '−' : ''}${rd$(Math.abs(P.net))}</span></div>
+      <div class="rd-say">${esc(P.instruction)}</div>
+      ${P.wins.map((w) => `<div class="rd-line win"><span>✓ ${esc(w.label)} • ${rd$(w.amount)} at ${w.odds}:1</span><b>+${rd$(w.pay)}</b></div>`).join('')}
+      ${P.losses.map((l) => `<div class="rd-line loss"><span>✕ ${esc(l.label)}</span><b>−${rd$(l.amount)}</b></div>`).join('')}
+      <div class="rd-sum"><span>Winnings (profit) <b>${rd$(P.winnings)}</b></span><span>Losing stakes <b>${rd$(P.lostStakes)}</b></span><span>Back to player incl. winning stakes <b>${rd$(P.totalReturn)}</b></span></div>
+    </div></section>`).join('') || '<div class="note">No bets were on the table for this spin.</div>'}
+  <section class="section"><div class="btn-row"><button class="btn primary" data-act="rd-new">New Spin</button><button class="btn danger" data-act="rd-undo">Undo settlement</button></div></section>${rdHistory()}`;
+}
+function rdHistory() {
+  if (!rd.history.length) return '';
+  return `<section class="section"><div class="sec-head"><h2 class="sec-title">Recent spins</h2><span class="sec-meta">this phone only</span></div><div class="panel">
+    ${rd.history.slice(0, 10).map((h) => `<div class="rd-hist"><span class="rd-n mini ${RL.colorOf(h.winning)}">${h.winning}</span><span>${new Date(h.at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}</span><span>Paid ${rd$(h.paid)} • Collected ${rd$(h.collected)}</span></div>`).join('')}</div></section>`;
+}
+function rdCalcView() {
+  const p = RL.payout(rd.calcType, rd.calcAmt);
+  return `<section class="section rd-box"><div class="sub-h">Bet</div>
+    <div class="rd-types">${RD_INSIDE.map(([k, l, o]) => `<button class="rd-t ${rd.calcType === k ? 'on' : ''}" data-act="rd-ctype" data-t="${k}">${l}<small>${o}:1</small></button>`).join('')}</div>
+    <div class="rd-types out">${[['red', 'Even money'], ['dozen1', 'Dozen / Column']].map(([k, l]) => `<button class="rd-t ${RL.oddsOf(rd.calcType) === RL.oddsOf(k) && !RL.INSIDE[rd.calcType] ? 'on' : ''}" data-act="rd-ctype" data-t="${k}">${l}<small>${RL.oddsOf(k)}:1</small></button>`).join('')}</div>
+    <div class="sub-h">Wager</div>${rdAmounts(rd.calcAmt, 'rd-camt', 'rd.camt')}
+    <div class="rd-calc">${p ? `<div><small>PAYOUT (${p.odds}:1)</small><b data-calc-pay>${rd$(p.winnings)}</b></div><div><small>TOTAL BACK INCL. STAKE</small><b data-calc-total>${rd$(p.total)}</b></div>` : '<div><small>Enter a wager</small><b>–</b></div>'}</div>
+  </section>`;
+}
+function rdNum(v) { const x = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; }
 
 // ---------------------------------------------------------------- broadcast moments
 // "The pick is in": every connected phone, about two seconds, never blocks taps.
