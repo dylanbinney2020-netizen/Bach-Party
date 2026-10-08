@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-<!-- Quyle's app, single-file build 2026-10-08T18:15:11Z. Upload this one file; never upload config.js. -->
+<!-- Quyle's app, single-file build 2026-10-08T18:39:44Z. Upload this one file; never upload config.js. -->
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0C1C15">
@@ -859,6 +859,23 @@ body.in-chat main { padding-bottom: calc(var(--nav-h) + 100px + env(safe-area-in
 .rd-calc div { padding: 14px; border-radius: var(--r-m); background: var(--cream); color: var(--ink); text-align: center; }
 .rd-calc small { display: block; font: 700 10px/1.2 var(--display); letter-spacing: .14em; color: var(--ink-2); } .rd-calc b { font: 800 38px/1.1 var(--display); }
 
+/* Roulette Dealer: physical $5 chip instructions */
+.rd-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.1; }
+.rd-chip small { font: 600 9px/1 var(--display); letter-spacing: .04em; opacity: .75; }
+.rd-totals em { display: block; margin-top: 2px; font: 700 12px/1 var(--display); font-style: normal; letter-spacing: .12em; color: var(--gold-l); }
+.rd-chipplan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.rd-chipplan .cp { padding: 8px 6px; border-radius: var(--r-s); text-align: center; background: rgba(10,24,18,.6); border: 1px solid var(--line); opacity: .55; }
+.rd-chipplan .cp.go { opacity: 1; }
+.rd-chipplan small { display: block; font: 800 10px/1.1 var(--display); letter-spacing: .14em; color: var(--muted); }
+.rd-chipplan b { display: block; margin-top: 3px; font: 800 22px/1.05 var(--display); color: var(--cream); }
+.rd-chipplan span { display: block; margin-top: 2px; font: 600 11px/1.2 var(--body); color: var(--muted); }
+.rd-chipplan .pay.go { background: rgba(88,196,135,.16); border-color: var(--win); } .rd-chipplan .pay.go b { color: #9FE3BD; }
+.rd-chipplan .keep.go { background: rgba(200,165,91,.16); border-color: var(--gold); } .rd-chipplan .keep.go b { color: var(--gold-l); }
+.rd-chipplan .collect.go { background: rgba(227,107,93,.14); border-color: var(--loss); } .rd-chipplan .collect.go b { color: #F3A196; }
+.rd-net { margin-top: 8px; font: 700 13px/1.2 var(--display); letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.rd-net b { color: var(--cream); font-size: 15px; }
+.rd-calc em { display: block; margin-top: 4px; font: 800 14px/1 var(--display); font-style: normal; letter-spacing: .12em; color: var(--gold-d); }
+
 </style>
 </head>
 <body>
@@ -1313,7 +1330,7 @@ function settle(bets, winning, nameOf = (p) => String(p)) {
     P.net = P.winnings - P.lostStakes; P.totalReturn = P.winnings + P.winStakes;
     const $ = (v) => `$${Number.isInteger(v) ? v : v.toFixed(2)}`;
     const parts = [];
-    if (P.wins.length) parts.push(`Pay ${P.name} ${$(P.winnings)} in winnings. Leave ${P.wins.length === 1 ? 'the original ' + $(P.winStakes) + ' winning chip' : 'the original ' + $(P.winStakes) + ' in winning chips'} in place.`);
+    if (P.wins.length) parts.push(`Pay ${P.name} ${$(P.winnings)} in winnings. Leave ${P.winStakes === 5 ? 'the original $5 winning chip' : 'the original ' + $(P.winStakes) + ' in winning chips'} in place.`);   // "chip" only when it is one $5 chip
     if (P.losses.length) parts.push(`Collect ${$(P.lostStakes)} in losing bets (${P.losses.map((l) => `${$(l.amount)} ${l.label}`).join(', ')}).`);
     P.instruction = parts.join(' ');
     return P;
@@ -1322,7 +1339,20 @@ function settle(bets, winning, nameOf = (p) => String(p)) {
     totals: { paid: rows.reduce((s, p) => s + p.winnings, 0), collected: rows.reduce((s, p) => s + p.lostStakes, 0) } };
 }
 
-return { RED, ALL, colorOf, describe, OUTSIDE, INSIDE, TYPES, oddsOf, combosOf, makeBet, betWins, betLabel, payout, settle };
+// ---------- physical chips (every chip = $5) ----------
+// Display-only conversions of the settlement above; the dollar math is unchanged.
+const CHIP = 5;
+const isWholeChips = (dollars) => Math.abs(Number(dollars) / CHIP - Math.round(Number(dollars) / CHIP)) < 1e-9;
+const toChips = (dollars) => Number(dollars) / CHIP;
+// For one settled player: chips to PAY (winnings), chips they KEEP (winning stakes),
+// chips to COLLECT (losing stakes), and NET. `exact` is false if any bet was not in whole $5 chips.
+function chipPlan(P) {
+  const exact = [...P.wins, ...P.losses].every((b) => isWholeChips(b.amount));
+  return { exact, pay: toChips(P.winnings), keep: toChips(P.winStakes), collect: toChips(P.lostStakes), net: toChips(P.net),
+    dollars: { pay: P.winnings, keep: P.winStakes, collect: P.lostStakes, net: P.net } };
+}
+
+return { RED, ALL, colorOf, describe, OUTSIDE, INSIDE, TYPES, oddsOf, combosOf, makeBet, betWins, betLabel, payout, settle, CHIP, isWholeChips, toChips, chipPlan };
 })();
 
 const { api, startLiveUpdates, startChatSignal } = __mod_api;
@@ -2493,13 +2523,15 @@ const A = {
   'rd-add': () => {
     if (!rd.player) return toast('Pick the player first', 'err');
     const custom = rdNum(val('rd.amt')); const amount = custom || rd.amt;
+    if (!RL.isWholeChips(amount)) return toast('Bets must be whole $5 chips ($5, $10, $15…)', 'err');
     let bet; try { bet = RL.makeBet({ type: rd.type, nums: rd.picks, amount }); } catch (e) { return toast(e.message, 'err'); }
     rd.bets.push({ id: rd.nextId++, player: rd.player, ...bet }); rd.picks = []; ui.f['rd.amt'] = ''; if (custom) rd.amt = custom; rdSave();
     toast(`${rdName(rd.player)}: ${RL.betLabel(bet)} ${rd$(bet.amount)} added`); render(); },
   'rd-del': (el) => { rd.bets = rd.bets.filter((b) => b.id !== +el.dataset.id); rdSave(); render(); },
   'rd-edit': (el) => { ui.modal = { type: 'rd-edit', id: +el.dataset.id }; render(); },
   'rd-save-edit': () => { const b = rd.bets.find((x) => x.id === ui.modal.id); const v = rdNum(val('rd.edit'));
-    if (!v) return toast('Enter an amount above $0', 'err'); b.amount = v; rdSave(); ui.modal = null; clearForm('rd.edit'); render(); },
+    if (!v) return toast('Enter an amount above $0', 'err');
+    if (!RL.isWholeChips(v)) return toast('Bets must be whole $5 chips ($5, $10, $15…)', 'err'); b.amount = v; rdSave(); ui.modal = null; clearForm('rd.edit'); render(); },
   'rd-clear': () => confirmThen({ title: 'Clear all bets', body: `Remove all ${rd.bets.length} bets from this spin? This cannot be undone.`, ok: 'Clear bets', danger: true }, () => { rd.bets = []; rd.picks = []; rdSave(); render(); }),
   'rd-repeat': () => { const copy = rd.last.map((b) => ({ ...b, id: rd.nextId++ })); rd.bets.push(...copy); rdSave(); toast(`${copy.length} previous bet${copy.length === 1 ? '' : 's'} added`); render(); },
   'rd-land': (el) => { const x = el.dataset.n;
@@ -2650,7 +2682,10 @@ document.addEventListener('input', (ev) => {
   ui.f[k] = t.type === 'checkbox' ? t.checked : t.value;
   if (k === 'chat.msg') paintCount(t.value);
   if (k === 'rd.camt') { const v = rdNum(t.value); const pp = v && RL.payout(rd.calcType, v); const a = document.querySelector('[data-calc-pay]'), b = document.querySelector('[data-calc-total]');
-    if (pp && a && b) { rd.calcAmt = v; rdSave(); a.textContent = rd$(pp.winnings); b.textContent = rd$(pp.total); document.querySelectorAll('.rd-chip.on').forEach((c) => c.classList.remove('on')); } }
+    if (pp && a && b) { rd.calcAmt = v; rdSave(); a.textContent = rd$(pp.winnings); b.textContent = rd$(pp.total); document.querySelectorAll('.rd-chip.on').forEach((c) => c.classList.remove('on'));
+      const ac = document.querySelector('[data-calc-paychips]'), bc = document.querySelector('[data-calc-totalchips]'), nt = document.querySelector('[data-calc-note]');
+      if (ac) ac.textContent = `PAY ${rdChips(RL.toChips(pp.winnings))}`; if (bc) bc.textContent = rdChips(RL.toChips(pp.total));
+      if (nt) nt.textContent = RL.isWholeChips(v) ? 'Every chip is $5. The original stake stays with the player on a win.' : 'That wager is not a whole number of $5 chips, so chip counts are shown exactly.'; } }
   if (t.dataset.calc != null) { const o = document.querySelector('[data-calcout]'); if (o) o.innerHTML = calcLine(Number(t.dataset.calc), t.value); }
   if (t.dataset.pair) {            // typing one spread fills the opposite side
     const n = parseSpread(t.value); const other = document.querySelector(`[data-k="${t.dataset.pair}"]`);
@@ -3040,7 +3075,7 @@ document.addEventListener('visibilitychange', async () => { if (tv.on && !docume
 // Casino Bank, balances, buy-ins or scoring. Bets live on this phone only.
 const RD_KEY = 'qk26.roulette.v1';
 const rd = (() => { try { return JSON.parse(localStorage.getItem(RD_KEY)) || null; } catch { return null; } })() || { bets: [], settled: null, last: [], history: [], nextId: 1 };
-rd.view = rd.view || 'bets'; rd.player = rd.player || null; rd.type = rd.type || 'straight'; rd.picks = []; rd.amt = rd.amt || 5; rd.calcType = rd.calcType || 'straight'; rd.calcAmt = rd.calcAmt || 10;
+rd.view = rd.view || 'bets'; rd.player = rd.player || null; rd.type = rd.type || 'straight'; rd.picks = []; rd.amt = rd.amt && RL.isWholeChips(rd.amt) ? rd.amt : 5; rd.calcType = rd.calcType || 'straight'; rd.calcAmt = rd.calcAmt || 10;
 const rdSave = () => { try { localStorage.setItem(RD_KEY, JSON.stringify({ bets: rd.bets, settled: rd.settled, last: rd.last, history: rd.history, nextId: rd.nextId, view: rd.view, player: rd.player, type: rd.type, amt: rd.amt, calcType: rd.calcType, calcAmt: rd.calcAmt })); } catch { /* private mode */ } };
 const rd$ = (v) => `$${Number.isInteger(Number(v)) ? Number(v).toLocaleString('en-US') : Number(v).toFixed(2)}`;
 const rdName = (id) => (U.member(S, id) || {}).name || '?';
@@ -3054,7 +3089,7 @@ function rdBoard(sel, act, locked) {
   return `<div class="rd-board"><div class="rd-zero">${cell('0')}${cell('00')}</div><div class="rd-grid">${rows}</div></div>`;
 }
 function rdAmounts(cur, act, k) {
-  return `<div class="rd-chips">${[1, 5, 10, 25, 50, 100].map((a) => `<button class="rd-chip ${Number(cur) === a ? 'on' : ''}" data-act="${act}" data-a="${a}">$${a}</button>`).join('')}
+  return `<div class="rd-chips">${[5, 10, 20, 25, 50, 100].map((a) => `<button class="rd-chip ${Number(cur) === a ? 'on' : ''}" data-act="${act}" data-a="${a}">$${a}<small>${a / RL.CHIP} chip${a === RL.CHIP ? '' : 's'}</small></button>`).join('')}
     <input class="rd-amt" inputmode="decimal" data-k="${k}" placeholder="Other $" value="${esc(ui.f[k] ?? '')}"></div>`;
 }
 function roulettePage() {
@@ -3094,9 +3129,15 @@ function rdSettleView() {
     <div class="rd-land">${rdBoard([], 'rd-land', false)}</div></section>${rdHistory()}`;
   const i = r.info; const facts = i.color === 'green' ? ['GREEN', 'no outside bets win'] : [i.color.toUpperCase(), i.parity.toUpperCase(), i.range === 'low' ? '1–18' : '19–36', ['1st', '2nd', '3rd'][i.dozen - 1] + ' 12', `COLUMN ${i.column}`];
   return `<section class="section"><div class="rd-result ${i.color}"><b>${r.winning}</b><span>${facts.join(' • ')}</span></div>
-    ${r.players.length ? `<div class="rd-totals"><div><small>YOU PAY OUT</small><b>${rd$(r.totals.paid)}</b></div><div><small>YOU COLLECT</small><b>${rd$(r.totals.collected)}</b></div></div>` : ''}</section>
+    ${r.players.length ? `<div class="rd-totals"><div><small>YOU PAY OUT</small><b>${rd$(r.totals.paid)}</b><em>${rdChips(RL.toChips(r.totals.paid))}</em></div><div><small>YOU COLLECT</small><b>${rd$(r.totals.collected)}</b><em>${rdChips(RL.toChips(r.totals.collected))}</em></div></div>` : ''}</section>
   ${r.players.map((P) => `<section class="section"><div class="panel rd-card ${P.net > 0 ? 'up' : P.net < 0 ? 'down' : ''}">
       <div class="rd-card-head"><b>${esc(P.name)}</b><span>NET ${P.net > 0 ? '+' : P.net < 0 ? '−' : ''}${rd$(Math.abs(P.net))}</span></div>
+      ${(() => { const c = RL.chipPlan(P); return `<div class="rd-chipplan">
+        <div class="cp pay ${c.pay ? 'go' : ''}"><small>PAY</small><b>${rdChips(c.pay)}</b><span>${rd$(c.dollars.pay)}</span></div>
+        <div class="cp keep ${c.keep ? 'go' : ''}"><small>KEEP / RETURN</small><b>${rdChips(c.keep)}</b><span>${rd$(c.dollars.keep)} winning bet${c.keep === 1 ? '' : 's'}</span></div>
+        <div class="cp collect ${c.collect ? 'go' : ''}"><small>COLLECT</small><b>${rdChips(c.collect)}</b><span>${rd$(c.dollars.collect)}</span></div></div>
+        <div class="rd-net">NET RESULT: <b>${rdSigned(c.net, c.dollars.net)}</b></div>
+        ${c.exact ? '' : '<div class="note warn" style="margin:6px 0 0">Some of these bets are not whole $5 chips, so chip counts are shown exactly, not rounded.</div>'}`; })()}
       <div class="rd-say">${esc(P.instruction)}</div>
       ${P.wins.map((w) => `<div class="rd-line win"><span>✓ ${esc(w.label)} • ${rd$(w.amount)} at ${w.odds}:1</span><b>+${rd$(w.pay)}</b></div>`).join('')}
       ${P.losses.map((l) => `<div class="rd-line loss"><span>✕ ${esc(l.label)}</span><b>−${rd$(l.amount)}</b></div>`).join('')}
@@ -3115,9 +3156,12 @@ function rdCalcView() {
     <div class="rd-types">${RD_INSIDE.map(([k, l, o]) => `<button class="rd-t ${rd.calcType === k ? 'on' : ''}" data-act="rd-ctype" data-t="${k}">${l}<small>${o}:1</small></button>`).join('')}</div>
     <div class="rd-types out">${[['red', 'Even money'], ['dozen1', 'Dozen / Column']].map(([k, l]) => `<button class="rd-t ${RL.oddsOf(rd.calcType) === RL.oddsOf(k) && !RL.INSIDE[rd.calcType] ? 'on' : ''}" data-act="rd-ctype" data-t="${k}">${l}<small>${RL.oddsOf(k)}:1</small></button>`).join('')}</div>
     <div class="sub-h">Wager</div>${rdAmounts(rd.calcAmt, 'rd-camt', 'rd.camt')}
-    <div class="rd-calc">${p ? `<div><small>PAYOUT (${p.odds}:1)</small><b data-calc-pay>${rd$(p.winnings)}</b></div><div><small>TOTAL BACK INCL. STAKE</small><b data-calc-total>${rd$(p.total)}</b></div>` : '<div><small>Enter a wager</small><b>–</b></div>'}</div>
+    <div class="rd-calc">${p ? `<div><small>PAYOUT (${p.odds}:1)</small><b data-calc-pay>${rd$(p.winnings)}</b><em data-calc-paychips>PAY ${rdChips(RL.toChips(p.winnings))}</em></div><div><small>TOTAL BACK INCL. STAKE</small><b data-calc-total>${rd$(p.total)}</b><em data-calc-totalchips>${rdChips(RL.toChips(p.total))}</em></div>` : '<div><small>Enter a wager</small><b>–</b></div>'}</div>
+    <p class="help" data-calc-note>${p && !RL.isWholeChips(rd.calcAmt) ? 'That wager is not a whole number of $5 chips, so chip counts are shown exactly.' : 'Every chip is $5. The original stake stays with the player on a win.'}</p>
   </section>`;
 }
+const rdChips = (c) => { const n = Number(c); const t = Number.isInteger(n) ? String(Math.abs(n)) : String(Math.round(Math.abs(n) * 100) / 100); return `${t} CHIP${Math.abs(n) === 1 ? '' : 'S'}`; };
+const rdSigned = (c, d) => `${c > 0 ? '+' : c < 0 ? '−' : ''}${rdChips(c).toLowerCase()} (${d > 0 ? '+' : d < 0 ? '−' : ''}${rd$(Math.abs(d))})`;
 function rdNum(v) { const x = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return Number.isFinite(x) && x > 0 ? Math.round(x * 100) / 100 : null; }
 
 // ---------------------------------------------------------------- broadcast moments
