@@ -1269,7 +1269,7 @@ const ordinal = (n) => ['', '1st', '2nd', '3rd'][n] || `${n}th`;
 
 // ----- selectors over server state -----
 const team = (S, id) => S.teams.find((t) => t.id === id);
-const member = (S, id) => S.members.find((m) => m.id === id);
+const member = (S, id) => (S.allMembers || S.members).find((m) => m.id === id);   // includes retired members so old records still show their name
 const draft = (S, kind) => S.drafts.find((d) => d.kind === kind);
 const game = (S, id) => S.games.find((g) => g.id === id);
 const picksFor = (S, kind, teamId) => S.picks.filter((p) => p.kind === kind && (teamId == null || p.team_id === teamId));
@@ -1645,6 +1645,8 @@ const val = (k) => {
 const clearForm = (prefix) => Object.keys(ui.f).forEach((k) => k.startsWith(prefix) && delete ui.f[k]);
 
 // ---------------------------------------------------------------- data flow
+// Members who are no longer attending. Hidden from every active list; their history is never deleted or changed.
+const RETIRED_MEMBERS = ['Kohl'];
 async function refresh(force = false) {
   if (!api.token) return;                       // signed out: never fetch (and never "expire" again)
   if (fetching) { refetchQueued = true; return; }
@@ -1657,6 +1659,7 @@ async function refresh(force = false) {
     const changed = !S || force || next.version !== S.version;
     applyBrand(next);
     const prevPickIds = seenPickIds, wasFinal = S && S.competition.finalized_at;
+    next.allMembers = next.members; next.members = next.members.filter((m) => !RETIRED_MEMBERS.includes(m.name));
     S = next;
     const ids = new Set(S.picks.map((p) => p.id));
     freshPickIds = new Set([...ids].filter((id) => seenPickIds.size && !seenPickIds.has(id)));
@@ -2235,7 +2238,7 @@ function scratchLine() {
     return `<span class="sc-win" ${tstyle(t)}><b>${esc(m?.name || '')}</b> ${esc(t?.name || '')} <em>+0.5</em></span>`; }).join('')}</div>`;
 }
 function blackjackView() {
-  const bj = S.blackjack; const c = S.casino || { cashed_out: 0, players_total: 12, results: [] };
+  const bj = S.blackjack; const c = S.casino || { cashed_out: 0, players_total: S.members.length, results: [] };
   const results = [...(c.results || [])].sort((a, b) => b.final_bankroll - a.final_bankroll);
   const cashList = results.length ? `<section class="section"><div class="sec-head"><h2 class="sec-title">${bj.finalized ? 'Final bankrolls' : 'Cashed out'}</h2><span class="sec-meta">${c.cashed_out} / ${c.players_total}</span></div>
     <div class="panel felt-panel">${results.map((r) => { const m = U.member(S, r.member_id); const t = m && U.team(S, m.team_id);
@@ -2331,7 +2334,7 @@ function cBlackjack() {
   const bj = S.blackjack; const c = S.casino || {};
   const mugOpts = `<option value="">No Mug winner</option>${S.teams.map((t) => `<optgroup label="${esc(t.name)}">${S.members.filter((m) => m.team_id === t.id).map((m) => `<option value="${m.id}" ${bj.mug_member_id === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>`).join('')}`;
   return `<p class="help">Blackjack + Roulette count as one event, decided by each team's combined final bankroll. Run it from the Casino Bank: cash everyone out and it ranks the teams and awards 3 / 2 / 1 for you.</p>
-  <div class="kv"><span>Cashed out</span><span>${c.cashed_out || 0} / ${c.players_total || 12}</span></div>
+  <div class="kv"><span>Cashed out</span><span>${c.cashed_out || 0} / ${c.players_total || S.members.length}</span></div>
   <button class="btn primary block" data-act="more" data-v="bank" style="margin-top:10px">Open the Casino Bank</button>
   <div class="sub-h">Manual placements (only if not using the bank)</div>
   <div class="grid-3">${[['first', '1st', bj.first_team], ['second', '2nd', bj.second_team], ['third', '3rd', bj.third_team]].map(([k, l, v]) =>
@@ -2343,7 +2346,7 @@ function cBlackjack() {
 function cScratch() {
   const w = S.scratch || []; const cur = (slot) => (w.find((x) => x.slot === slot) || {}).member_id;
   const opts = (sel) => `<option value="">Choose a player</option>${S.teams.map((t) => `<optgroup label="${esc(t.name)}">${S.members.filter((m) => m.team_id === t.id).map((m) => `<option value="${m.id}" ${sel === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</optgroup>`).join('')}`;
-  return `<p class="help">Two of the twelve tickets win. Each winning ticket adds +0.5 to that player's team, so both on one team is +1.0. The app does not draw tickets; just record who won.</p>
+  return `<p class="help">Two of the ${['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'][S.members.length] || S.members.length} tickets win. Each winning ticket adds +0.5 to that player's team, so both on one team is +1.0. The app does not draw tickets; just record who won.</p>
   <div class="field"><label>Winning ticket 1</label><select data-k="sc.1">${opts(cur(1))}</select></div>
   <div class="field"><label>Winning ticket 2</label><select data-k="sc.2">${opts(cur(2))}</select></div>
   <div class="btn-row"><button class="btn primary" data-act="c-scratch">${w.length ? 'Update winners' : 'Save winners'}</button>${w.length ? '<button class="btn danger" data-act="c-scratchclear">Clear</button>' : ''}</div>`;
@@ -3323,6 +3326,10 @@ function rdAmounts(cur, act, k) {
 }
 function roulettePage() {
   rd.view = 'table';
+  const active = new Set(S.members.map((m) => m.id));
+  if (!rd.settled && (rd.bets.some((b) => !active.has(b.player)) || (rd.last || []).some((b) => !active.has(b.player)) || (rd.player && !active.has(rd.player)))) {
+    rd.bets = rd.bets.filter((b) => active.has(b.player)); rd.last = (rd.last || []).filter((b) => active.has(b.player)); if (rd.player && !active.has(rd.player)) rd.player = null; rd.undo = []; rdSave();
+  }
   return `<div class="rdc is-table">${rdHeader()}${rdTableView()}</div>`;
 }
 // One compact toolbar: Back | Bets Calc | selected player | Undo Remove 0/00 | Settle Spin | menu
@@ -3409,7 +3416,7 @@ const rdSigned = (c, d) => `${c > 0 ? '+' : c < 0 ? '−' : ''}${rdChips(c).toLo
 // ---- touch table: one tap = one $5 chip on the same bet list the Bets and Settle tabs use ----
 const RD_COLORS = [['#4EA8DE', '#06263A'], ['#F4A261', '#3A1E06'], ['#90BE6D', '#16300A'], ['#F15BB5', '#3D0626'], ['#FEE440', '#3A3300'], ['#9B5DE5', '#FFFFFF'],
   ['#00C2A8', '#002E28'], ['#E63946', '#FFFFFF'], ['#3A56D4', '#FFFFFF'], ['#8B5A2B', '#FFFFFF'], ['#FFFFFF', '#14241B'], ['#2B2D42', '#FFFFFF']];
-const rdColor = (id) => { const ids = S.members.map((m) => m.id).sort((a, b) => a - b); const i = ids.indexOf(id); return RD_COLORS[(i < 0 ? 0 : i) % RD_COLORS.length]; };
+const rdColor = (id) => { const ids = (S.allMembers || S.members).map((m) => m.id).sort((a, b) => a - b); const i = ids.indexOf(id); return RD_COLORS[(i < 0 ? 0 : i) % RD_COLORS.length]; };
 const rdChipCount = (b) => { const c = b.amount / RL.CHIP; return Number.isInteger(c) ? c : Math.round(c * 100) / 100; };
 const rdIsGreenBet = (b) => b.type !== 'straight' && b.nums.some((x) => x === '0' || x === '00');
 const rdBetKey = (b) => `${b.type}:${b.nums.join('-')}`;
